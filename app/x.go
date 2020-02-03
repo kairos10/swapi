@@ -16,8 +16,36 @@ func main() {
 
 		cmds := []string { ":e1", ":", ":e2", ":e3", ":e1", ":", ":b1", ":a1" }
 		for _, cmd := range cmds {
-			response, err := wifi.SendCmdSync(mounts[0], cmd)
+			response, err := mounts[0].SendCmdSync(cmd)
 			fmt.Printf("[%s]\t\tresponse[%s]\t\terr[%v]\n", cmd, response, err)
+		}
+
+		vs, err := mounts[0].SWgetVersion(wifi.AXIS_RA_AZ)
+		if err != nil {
+			fmt.Println("getVer error: ", err)
+		} else {
+			fmt.Println("ver: ", vs)
+		}
+
+		vi, err := mounts[0].SWgetCountsPerRevolution(wifi.AXIS_RA_AZ)
+		if err != nil {
+			fmt.Println("SWgetCountsPerRevolution error: ", err)
+		} else {
+			fmt.Println("SWgetCountsPerRevolution: ", vi)
+		}
+
+		vi, err = mounts[0].SWgetPosition(wifi.AXIS_RA_AZ)
+		if err != nil {
+			fmt.Println("SWgetPosition error: ", err)
+		} else {
+			fmt.Println("SWgetPosition: ", vi)
+		}
+
+		err = mounts[0].SWstopMotion(wifi.AXIS_BOTH)
+		if err != nil {
+			fmt.Println(".SWstopMotion error: ", err)
+		} else {
+			fmt.Println("SWstopMotion done")
 		}
 	} else {
 		fmt.Println("nothing found!")

@@ -2,23 +2,14 @@ package wifi
 
 import (
 	"log"
-	"fmt"
 	"sync"
 	"net"
 	"time"
 	"encoding/hex"
 )
 
-type cmdError struct {
-	code byte
-	desc string
-}
-func (e *cmdError) Error() string {
-    return fmt.Sprintf("%d - %s", e.code, e.desc)
-}
-
 // use a different socket for each command, so the replies from different cmds do not get mixed up
-func SendCmdSync(mount *Mount, cmd string) (ret []byte, err error) {
+func (mount *Mount) SendCmdSync(cmd string) (ret []byte, err error) {
 	var numReplies struct {
 		sync.RWMutex
 		pending int
