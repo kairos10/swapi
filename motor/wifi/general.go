@@ -9,6 +9,8 @@ type Mount struct {
         UDPAddr        net.UDPAddr
         MCversion      string
         DiscoveryTime time.Time
+
+	localConn *net.UDPConn
 }
 
 const (

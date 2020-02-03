@@ -2,53 +2,59 @@ package wifi
 
 import (
 	"log"
+	"fmt"
 	"sync"
 	"net"
 	"time"
+	"encoding/hex"
 )
 
+type cmdError struct {
+	code byte
+	desc string
+}
+func (e *cmdError) Error() string {
+    return fmt.Sprintf("%d - %s", e.code, e.desc)
+}
+
 // use a different socket for each command, so the replies from different cmds do not get mixed up
-func SendCmdSync(mount *Mount, cmd string) (ret []byte) {
+func SendCmdSync(mount *Mount, cmd string) (ret []byte, err error) {
 	var numReplies struct {
 		sync.RWMutex
 		pending int
 	}
 
 	synCh1 := make(chan bool)
-	synCh2 := make(chan bool, 2)
-	localConn, err := net.ListenUDP("udp", nil)
-	if err != nil {
-		log.Fatal("SendCmdSync listen: ", err)
+	localConn := mount.localConn
+	if localConn == nil {
+		localConn, err = net.ListenUDP("udp", nil)
+		if err != nil {
+			log.Fatal("SendCmdSync listen: ", err)
+		}
 	}
-	defer localConn.Close()
 
 	go func() {
 		buf := make([]byte, 64)
 
-		synCh1 <- true
-		for cont:=true; cont; {
-			localConn.SetReadDeadline(time.Now().Add(TIMEOUT_REPLY / 3))
-			n, _, err := localConn.ReadFromUDP(buf)
-			if err==nil {
-				numReplies.Lock()
-				numReplies.pending--
-				numReplies.Unlock()
-				synCh1 <- true
-				cont = false
-				ret = buf[:n-1]
-			}
+		synCh1 <- true // let WRITE continue
 
-			// the read loop can exit before the writer is aware thet a reply was received; this is why we need 2 spaces on the synCh2 channel
-			select {
-                        case <- synCh2:
-                                cont = false
-                        default:
-                        }
-
+		// wait TIMEOUT_REPLY for each NUM_REPEAT_CMD
+		localConn.SetReadDeadline(time.Now().Add(TIMEOUT_REPLY * (NUM_REPEAT_CMD+1)))
+		n, _, err := localConn.ReadFromUDP(buf)
+		if err != nil {
+			log.Println("read error: ", err)
+		} else {
+			numReplies.Lock()
+			numReplies.pending--
+			numReplies.Unlock()
+			ret = buf[:n-1]
 		}
+
 		synCh1 <- true
+
 	}()
-	<- synCh1
+
+	<- synCh1 // wait for READ to get ready
 
 	for i, cont :=0, true; cont && i<NUM_REPEAT_CMD; i++ {
 		_, err := localConn.WriteToUDP([]byte(cmd+"\r"), &mount.UDPAddr)
@@ -59,19 +65,27 @@ func SendCmdSync(mount *Mount, cmd string) (ret []byte) {
 		numReplies.pending++
 		numReplies.Unlock()
 		select {
-		case <- synCh1:
+		case <- synCh1: // READ is done
 			cont = false
 		case <- time.After(TIMEOUT_REPLY * 3 / 2):
 		}
 	}
-	synCh2 <- true
-	<- synCh1
 
 	if numReplies.pending == 0 {
 		// reuse localAddr
-		log.Printf("localConn %v still in sync\n", localConn.LocalAddr())
+		mount.localConn = localConn
 	} else {
 		log.Println("localConn not in sync; pending=", numReplies.pending)
+		mount.localConn = nil
+		defer localConn.Close()
+	}
+
+	if len(ret) == 0 {
+		err = &cmdError{0, "cmd no reply"}
+	} else if ret[0] == '!' {
+		var code [1]byte
+		hex.Decode(code[:], ret[1:])
+		err = &cmdError{code[0], "remote error"}
 	}
 	return
 }
