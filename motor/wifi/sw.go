@@ -10,11 +10,42 @@ import (
 )
 
 type AXIS int
-
 const (
 	AXIS_RA_AZ   = 1
 	AXIS_DEC_ALT = 2
 	AXIS_BOTH    = 3
+)
+
+// byte position: int -> sw representation
+const (
+	D1	=	0x0000f0
+	D2	=	0x00000f
+	D3	=	0x00f000
+	D4	=	0x000f00
+	D5	=	0xf00000
+	D6	=	0x0f0000
+)
+// bit position: int -> sw representation
+const (
+	D2_B0	=	1 << iota
+	D2_B1
+	D2_B2
+	D2_B3
+
+	D1_B0
+	D1_B1
+	D1_B2
+	D1_B3
+
+	D4_B0
+	D4_B1
+	D4_B2
+	D4_B3
+
+	D3_B0
+	D3_B1
+	D3_B2
+	D3_B3
 )
 
 func (m *Mount) swSend(cmd byte, ax AXIS, cmdParam *int) (ret0 int, err0 error) {
@@ -156,22 +187,16 @@ func (ms MotorStatus) String() string {
 }
 func (mount *Mount) SWgetMotorStatus(ax AXIS) (ret0 MotorStatus, err0 error) {
 	v, err0 := mount.swSend('f', ax, nil)
-	// 111 > 1110 > 1011
-	// 611 > 6110 > 1061
 	if err0 == nil {
-		d1 := v&0xf0 >> 4
-		d2 := v&0x0f
-		d3 := v&0xf000 >> 12
+		ret0.IsTracking = (v&D1_B0 > 0)
+		ret0.IsCCW = (v&D1_B1 > 0)
+		ret0.IsFast = (v&D1_B2 > 0)
 
-		ret0.IsTracking = (d1&1 > 0)
-		ret0.IsCCW = (d1&2 > 0)
-		ret0.IsFast = (d1&4 > 0)
+		ret0.IsRunning = (v&D2_B0 > 0)
+		ret0.IsBlocked = (v&D2_B1 > 0)
 
-		ret0.IsRunning = (d2&1 > 0)
-		ret0.IsBlocked = (d2&2 > 0)
-
-		ret0.IsInitDone= (d3&1 > 0)
-		ret0.IsLevelSwitchOn= (d3&2 > 0)
+		ret0.IsInitDone= (v&D3_B0 > 0)
+		ret0.IsLevelSwitchOn= (v&D3_B1 > 0)
 	}
 	return
 }
@@ -209,23 +234,18 @@ func (es ExtendedStatus) String() string {
 func (mount *Mount) SWgetExtendedInfo(ax AXIS) (ret0 ExtendedStatus, err0 error) {
 	ext := 0x000001
 	v, err0 := mount.swSend('q', ax, &ext)
-	// 098000 > 008009
 	if err0 == nil {
-		d1 := v&0xf0 >> 4
-		d2 := v&0x0f
-		d3 := v&0xf000 >> 12
+		ret0.IsPecTrainingOn = (v&D1_B0 > 0)
+		ret0.IsPecTrackingOn = (v&D1_B1 > 0)
 
-		ret0.IsPecTrainingOn = (d1&1 > 0)
-		ret0.IsPecTrackingOn = (d1&2 > 0)
+		ret0.SupportDualEncoder = (v&D2_B0 > 0)
+		ret0.SupportPPEC = (v&D2_B1 > 0)
+		ret0.SupportOriginalIndex = (v&D2_B2 > 0)
+		ret0.SupportEQAZ = (v&D2_B3 > 0)
 
-		ret0.SupportDualEncoder = (d2&1 > 0)
-		ret0.SupportPPEC = (d2&2 > 0)
-		ret0.SupportOriginalIndex = (d2&4 > 0)
-		ret0.SupportEQAZ = (d2&8 > 0)
-
-		ret0.HasPolarScopeLED = (d3&1 > 0)
-		ret0.IsAxisSeparateStart = (d3&2 > 0)
-		ret0.HasTorqueSelection = (d3&4 > 0)
+		ret0.HasPolarScopeLED = (v&D3_B0 > 0)
+		ret0.IsAxisSeparateStart = (v&D3_B1 > 0)
+		ret0.HasTorqueSelection = (v&D3_B2 > 0)
 	}
 	return
 }
@@ -238,3 +258,5 @@ func (mount *Mount) SWsetPosition(ax AXIS, numTicks int) (err0 error) {
 	}
 	return
 }
+
+type MotionMode int
