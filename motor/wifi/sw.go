@@ -82,8 +82,11 @@ func (m *Mount) swSend(cmd byte, ax AXIS, cmdParam *int) (ret0 int, err0 error) 
 			err0 = &cmdError { ERR02_RESP_LEN, "["+"x"+"] invalid response ["+string(b)+"]" }
 		} else {
 			var decodeBuf [3]byte
+			if len(b[1:]) /2 * 2 < len(b[1:]) {
+				b = b[:len(b)+1]
+				b[len(b)-1]='0'
+			}
 			hex.Decode(decodeBuf[:], b[1:])
-			//ret0 = decodeBuf[:((len(b)+1)/2)-1]
 			for x := ((len(b)+1)/2)-2; x>=0; x-- {
 				ret0 = (ret0<<8) + int(decodeBuf[x])
 			}
@@ -115,6 +118,52 @@ func (mount *Mount) SWgetPosition(ax AXIS) (ret0 int, err0 error) {
 
 func (mount *Mount) SWstopMotion(ax AXIS) (err0 error) {
 	_, err0 = mount.swSend('K', ax, nil)
+	return
+}
+
+func (mount *Mount) SWgetTimerFreq() (int, error) {
+	return mount.swSend('b', 1, nil)
+}
+
+type MotorStatus struct {
+	IsTracking bool
+	IsCCW bool
+	IsFast bool
+	IsRunning bool
+	IsBlocked bool
+	IsInitDone bool
+	IsLevelSwitchOn bool
+}
+func (ms MotorStatus) String() string {
+	ret := ""
+	if ms.IsTracking { ret += "tracking" } else { ret += "goto" }
+	if ms.IsCCW { ret += " CCW" } else { ret += " CW" }
+	if ms.IsFast { ret += " fast" } else { ret += " slow" }
+	if ms.IsRunning { ret += " running" } else { ret += " stopped" }
+	if ms.IsBlocked { ret += " blocked" } else { ret += " normal" }
+	if ms.IsInitDone { ret += " initDone" } else { ret += " initNot" }
+	if ms.IsLevelSwitchOn { ret += " levelSwitchOn" } else { ret += " levelSwitchOff" }
+	return ret
+}
+func (mount *Mount) SWgetMotorStatus(ax AXIS) (ret0 MotorStatus, err0 error) {
+	v, err0 := mount.swSend('f', ax, nil)
+	// 111 > 1110 > 1011
+	// 611 > 6110 > 1061
+	if err0 == nil {
+		d1 := v&0xf0 >> 4
+		d2 := v&0x0f
+		d3 := v&0xf000 >> 12
+
+		ret0.IsTracking = (d1&1 > 0)
+		ret0.IsCCW = (d1&2 > 0)
+		ret0.IsFast = (d1&4 > 0)
+
+		ret0.IsRunning = (d2&1 > 0)
+		ret0.IsBlocked = (d2&2 > 0)
+
+		ret0.IsInitDone= (d3&1 > 0)
+		ret0.IsLevelSwitchOn= (d3&2 > 0)
+	}
 	return
 }
 
