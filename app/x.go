@@ -41,6 +41,13 @@ func main() {
 			fmt.Println("SWgetTimerFreq: ", vi)
 		}
 
+		vi, err = mounts[0].SWgetHighSpeedRatio(wifi.AXIS_RA_AZ)
+		if err != nil {
+			fmt.Println("SWgetHighSpeedRatio error: ", err)
+		} else {
+			fmt.Println("SWgetHighSpeedRatio: ", vi)
+		}
+
 		vi, err = mounts[0].SWgetPosition(wifi.AXIS_RA_AZ)
 		if err != nil {
 			fmt.Println("SWgetPosition error: ", err)
@@ -58,6 +65,13 @@ func main() {
 			fmt.Println("SWgetPosition error: ", err)
 		} else {
 			fmt.Println("SWgetPosition: ", vi)
+		}
+
+		err = mounts[0].SWstartMotion(wifi.AXIS_BOTH)
+		if err != nil {
+			fmt.Println("SWstartMotion error: ", err)
+		} else {
+			fmt.Println("SWstartMotion done")
 		}
 
 		err = mounts[0].SWstopMotion(wifi.AXIS_BOTH)
@@ -79,6 +93,13 @@ func main() {
 			fmt.Println("SWstopMotion error: ", err)
 		} else {
 			fmt.Println("SWstopMotion: done")
+		}
+
+		vy, err := mounts[0].SWgetExtendedInfo(wifi.AXIS_RA_AZ)
+		if err != nil {
+			fmt.Println("SWgetExtendedInfo error: ", err)
+		} else {
+			fmt.Println("SWgetExtendedInfo: ", vy)
 		}
 	} else {
 		fmt.Println("nothing found!")

@@ -108,6 +108,10 @@ func (mount *Mount) SWgetCountsPerRevolution(ax AXIS) (int, error) {
 	return mount.swSend('a', ax, nil)
 }
 
+func (mount *Mount) SWgetHighSpeedRatio(ax AXIS) (int, error) {
+	return mount.swSend('g', ax, nil)
+}
+
 func (mount *Mount) SWgetPosition(ax AXIS) (ret0 int, err0 error) {
 	ret0, err0 = mount.swSend('j', ax, nil)
 	if err0 == nil {
@@ -118,6 +122,11 @@ func (mount *Mount) SWgetPosition(ax AXIS) (ret0 int, err0 error) {
 
 func (mount *Mount) SWstopMotion(ax AXIS) (err0 error) {
 	_, err0 = mount.swSend('K', ax, nil)
+	return
+}
+
+func (mount *Mount) SWstartMotion(ax AXIS) (err0 error) {
+	_, err0 = mount.swSend('J', ax, nil)
 	return
 }
 
@@ -163,6 +172,60 @@ func (mount *Mount) SWgetMotorStatus(ax AXIS) (ret0 MotorStatus, err0 error) {
 
 		ret0.IsInitDone= (d3&1 > 0)
 		ret0.IsLevelSwitchOn= (d3&2 > 0)
+	}
+	return
+}
+
+
+type ExtendedStatus struct {
+	IsPecTrainingOn bool
+	IsPecTrackingOn bool
+
+	SupportDualEncoder bool
+	SupportPPEC bool
+	SupportOriginalIndex bool
+	SupportEQAZ bool
+
+	HasPolarScopeLED bool
+	IsAxisSeparateStart bool
+	HasTorqueSelection bool
+}
+func (es ExtendedStatus) String() string {
+	ret := ""
+	if es.IsPecTrainingOn { ret += " PecTrainingOn" } else { ret += " PecTrainingOff" }
+	if es.IsPecTrackingOn { ret += " PecTrackingOn" } else { ret += " PecTrackingOff" }
+
+	if es.SupportDualEncoder { ret += " SupportDualEncoder" } else { ret += " NoDualEncoder" }
+	if es.SupportPPEC { ret += " SupportPPEC" } else { ret += " NoPPEC" }
+	if es.SupportOriginalIndex { ret += " SupportOriginalIndex" } else { ret += " NoOriginalIndex" }
+	if es.SupportEQAZ { ret += " SupportEqAz" } else { ret += " NoEqAz" }
+
+	if es.HasPolarScopeLED { ret += " HasPolarScopeLED" } else { ret += " NoPolarScopeLED" }
+	if es.IsAxisSeparateStart { ret += " IsAxisSeparateStart" } else { ret += " NoAxisSeparateStart" }
+	if es.HasTorqueSelection { ret += " HasTorqueSelection" } else { ret += " NoTorqueSelection" }
+
+	return ret
+}
+func (mount *Mount) SWgetExtendedInfo(ax AXIS) (ret0 ExtendedStatus, err0 error) {
+	ext := 0x000001
+	v, err0 := mount.swSend('q', ax, &ext)
+	// 098000 > 008009
+	if err0 == nil {
+		d1 := v&0xf0 >> 4
+		d2 := v&0x0f
+		d3 := v&0xf000 >> 12
+
+		ret0.IsPecTrainingOn = (d1&1 > 0)
+		ret0.IsPecTrackingOn = (d1&2 > 0)
+
+		ret0.SupportDualEncoder = (d2&1 > 0)
+		ret0.SupportPPEC = (d2&2 > 0)
+		ret0.SupportOriginalIndex = (d2&4 > 0)
+		ret0.SupportEQAZ = (d2&8 > 0)
+
+		ret0.HasPolarScopeLED = (d3&1 > 0)
+		ret0.IsAxisSeparateStart = (d3&2 > 0)
+		ret0.HasTorqueSelection = (d3&4 > 0)
 	}
 	return
 }
