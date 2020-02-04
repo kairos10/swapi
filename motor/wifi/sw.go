@@ -167,3 +167,11 @@ func (mount *Mount) SWgetMotorStatus(ax AXIS) (ret0 MotorStatus, err0 error) {
 	return
 }
 
+func (mount *Mount) SWsetPosition(ax AXIS, numTicks int) (err0 error) {
+	err0 = mount.StopMotor(ax)
+	if err0 == nil {
+		numTicks += 0x800000
+		_, err0 = mount.swSend('E', ax, &numTicks)
+	}
+	return
+}

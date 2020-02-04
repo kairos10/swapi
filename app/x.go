@@ -47,6 +47,18 @@ func main() {
 		} else {
 			fmt.Println("SWgetPosition: ", vi)
 		}
+		err = mounts[0].SWsetPosition(wifi.AXIS_RA_AZ, 1234)
+		if err != nil {
+			fmt.Println("SWsetPosition error: ", err)
+		} else {
+			fmt.Println("SWgetPosition: done")
+		}
+		vi, err = mounts[0].SWgetPosition(wifi.AXIS_RA_AZ)
+		if err != nil {
+			fmt.Println("SWgetPosition error: ", err)
+		} else {
+			fmt.Println("SWgetPosition: ", vi)
+		}
 
 		err = mounts[0].SWstopMotion(wifi.AXIS_BOTH)
 		if err != nil {
@@ -60,6 +72,13 @@ func main() {
 			fmt.Println("SWgetMotorStatus error: ", err)
 		} else {
 			fmt.Println("SWgetMotorStatus: ", vx)
+		}
+
+		err = mounts[0].SWstopMotion(wifi.AXIS_BOTH)
+		if err != nil {
+			fmt.Println("SWstopMotion error: ", err)
+		} else {
+			fmt.Println("SWstopMotion: done")
 		}
 	} else {
 		fmt.Println("nothing found!")
