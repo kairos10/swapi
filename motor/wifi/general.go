@@ -33,6 +33,6 @@ func (e *cmdError) Error() string {
 const (
 	ERR01_AXIS	=	iota+100
 	ERR02_RESP_LEN
-	ERR03
+	ERR03_PARAM
 	ERR04
 )

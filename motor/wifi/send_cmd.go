@@ -15,7 +15,7 @@ func (mount *Mount) SendCmdSync(cmd string) (ret []byte, err error) {
 		pending int
 	}
 
-	synCh1 := make(chan bool)
+	synCh := make(chan bool)
 	localConn := mount.localConn
 	if localConn == nil {
 		localConn, err = net.ListenUDP("udp", nil)
@@ -27,7 +27,7 @@ func (mount *Mount) SendCmdSync(cmd string) (ret []byte, err error) {
 	go func() {
 		buf := make([]byte, 64)
 
-		synCh1 <- true // let WRITE continue
+		synCh <- true // let WRITE continue
 
 		// wait TIMEOUT_REPLY for each NUM_REPEAT_CMD
 		localConn.SetReadDeadline(time.Now().Add(TIMEOUT_REPLY * (NUM_REPEAT_CMD+1)))
@@ -41,11 +41,11 @@ func (mount *Mount) SendCmdSync(cmd string) (ret []byte, err error) {
 			ret = buf[:n-1]
 		}
 
-		synCh1 <- true
+		synCh <- true
 
 	}()
 
-	<- synCh1 // wait for READ to get ready
+	<- synCh // wait for READ to get ready
 
 	for i, cont :=0, true; cont && i<NUM_REPEAT_CMD; i++ {
 		_, err := localConn.WriteToUDP([]byte(cmd+"\r"), &mount.UDPAddr)
@@ -56,9 +56,9 @@ func (mount *Mount) SendCmdSync(cmd string) (ret []byte, err error) {
 		numReplies.pending++
 		numReplies.Unlock()
 		select {
-		case <- synCh1: // READ is done
+		case <- synCh: // READ is done
 			cont = false
-		case <- time.After(TIMEOUT_REPLY * 3 / 2):
+		case <- time.After(TIMEOUT_REPLY):
 		}
 	}
 
