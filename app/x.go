@@ -84,11 +84,11 @@ func main() {
 		} else {
 			fmt.Println("SWgetPosition: ", vi)
 		}
-		err = mounts[0].GoToReletiveIncrement(wifi.AXIS_RA_AZ, -5000)
+		err = mounts[0].GoToRelativeIncrement(wifi.AXIS_RA_AZ, 10000)
 		if err != nil {
-			fmt.Println("GoToTarget error: ", err)
+			fmt.Println("GoToRelativeIncrement error: ", err)
 		} else {
-			fmt.Println("GoToTarget: done")
+			fmt.Println("GoToRelativeIncrement: done")
 		}
 		vi, err = mounts[0].SWgetPosition(wifi.AXIS_RA_AZ)
 		if err != nil {

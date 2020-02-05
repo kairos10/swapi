@@ -2,7 +2,7 @@ package wifi
 
 import (
 	"time"
-	//"fmt"
+	"fmt"
 )
 
 func (mount *Mount) RetrieveMountParameters() (err0 error) {
@@ -35,7 +35,7 @@ func (mount *Mount) RetrieveMountParameters() (err0 error) {
 	return
 }
 
-func (mount *Mount) GoToReletiveIncrement(ax AXIS, relativeIncrement int) (err0 error) {
+func (mount *Mount) GoToRelativeIncrement(ax AXIS, relativeIncrement int) (err0 error) {
 	switch {
 	case true:
 		if relativeIncrement >  mount.MCParamCPR/2 || relativeIncrement < - mount.MCParamCPR/2 {
@@ -44,8 +44,9 @@ func (mount *Mount) GoToReletiveIncrement(ax AXIS, relativeIncrement int) (err0 
 		err0 = mount.StopMotor(ax)
 		if err0 != nil { break }
 
-		//crtPos, err0 := mount.SWgetPosition(ax)
-		//if err0 != nil { break }
+		crtPos, err0 := mount.SWgetPosition(ax)
+		targetPos := crtPos + relativeIncrement
+		if err0 != nil { break }
 		//fmt.Printf("CURRENT POS[%v] increment[%v] target[%v]\n", crtPos, relativeIncrement, crtPos+relativeIncrement)
 
 		isCCW := relativeIncrement<0
@@ -80,6 +81,10 @@ func (mount *Mount) GoToReletiveIncrement(ax AXIS, relativeIncrement int) (err0 
 			<- time.After(TIMEOUT_REPLY)
 			//crtPos, _ := mount.SWgetPosition(ax)
 			//fmt.Printf("GOTO crtPos=%d\n", crtPos)
+		}
+		crtPos, _ = mount.SWgetPosition(ax)
+		if crtPos != targetPos {
+			fmt.Printf("RELATIVE GOTO: initialTarget[%d] currentPos[%d] diff[%d]\n", targetPos, crtPos, targetPos-crtPos)
 		}
 		if err0 != nil { break }
 	}
