@@ -25,10 +25,10 @@ func (mount *Mount) RetrieveMountParameters() (err0 error) {
 		if version1 != version2 || cpr1 != cpr2 || hsMult1 != hsMult2 {
 			err0 = &cmdError{ERR05_NOT_SUPPORTED, "The mount has different parameters for each AXIS; not supported"}
 		} else {
-			mount.MCversion = version1
+			mount.MCversion = version2
 			mount.MCParamFrequency = freq
-			mount.MCParamCPR = cpr1
-			mount.MCParamHighSpeedMult = hsMult1
+			mount.MCParamCPR = cpr2
+			mount.MCParamHighSpeedMult = hsMult2
 		}
 	}
 	return
