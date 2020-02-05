@@ -1,9 +1,12 @@
 # golang API for Skywatcher(c) wifi modules or AZGTi mounts
 This GO module is usefull to control a wifi-aware *Skywatcher(c)* mount over wifi.
-The module implements a couple of SW methods to control the motors (**SW** functions) and a couple of combo methods to control the mounts in a more complex manner.
+
+The module implements a couple of SW methods to control the motors (**SW** functions) and a couple of combo methods to control the mount in a more complex manner.
+
+As of now, the API is not aware of the sky coordinates
 
 # usage
-To find all awailable mounts available on you network, use the **FindMounts()** function:
+To find all available mounts available on you network, use the **FindMounts()** function:
 ```
 package main
 
