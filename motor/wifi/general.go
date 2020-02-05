@@ -16,6 +16,10 @@ type Mount struct {
 	localConn *net.UDPConn
 
 	MCversion     string
+
+	MCParamFrequency int
+	MCParamCPR int
+	MCParamHighSpeedMult int
 }
 
 const (
@@ -35,6 +39,7 @@ const (
 	ERR02_RESP_LEN
 	ERR03_PARAM
 	ERR04_NA
-	ERR05
+	ERR05_NOT_SUPPORTED
 	ERR06
+	ERR07
 )

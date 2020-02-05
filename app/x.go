@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
         "github.com/kairos10/swapi/motor/wifi"
+	"time"
 )
 
 
@@ -12,6 +13,11 @@ func main() {
 		for i:=0; i<len(mounts); i++ {
 			m := mounts[i]
 			fmt.Printf("found: %s:%d, version[%s], time[%s]\n", m.UDPAddr.IP, m.UDPAddr.Port, m.MCversion, m.DiscoveryTime)
+
+			err := m.RetrieveMountParameters()
+			if err != nil {
+				fmt.Println("RetrieveMountParameters error: ", err)
+			}
 		}
 
 		cmds := []string { ":e1", ":", ":e2", ":e3", ":e1", ":", ":b1", ":a1" }
@@ -67,12 +73,28 @@ func main() {
 			fmt.Println("SWgetPosition: ", vi)
 		}
 
+		var mm wifi.MotionMode
+		mm.MmTrackingNotGoto = true
+		mm.MmSpeedFast = true
+		mm.MmSpeedMedium = false
+		mm.MmSlowGoTo = false
+		mm.IsCCW = true
+		mm.IsSouth = false
+		mm.IsCoarseGoto = false
+		err = mounts[0].SWsetMotionMode(wifi.AXIS_BOTH, mm)
+		if err != nil {
+			fmt.Println("SWsetMotionMode error: ", err)
+		} else {
+			fmt.Println("SWsetMotionMode done: ", mm)
+		}
+
 		err = mounts[0].SWstartMotion(wifi.AXIS_BOTH)
 		if err != nil {
 			fmt.Println("SWstartMotion error: ", err)
 		} else {
 			fmt.Println("SWstartMotion done")
 		}
+		time.Sleep(2*time.Second)
 
 		err = mounts[0].SWstopMotion(wifi.AXIS_BOTH)
 		if err != nil {
@@ -100,6 +122,13 @@ func main() {
 			fmt.Println("SWgetExtendedInfo error: ", err)
 		} else {
 			fmt.Println("SWgetExtendedInfo: ", vy)
+		}
+
+		err = mounts[0].SetSlewRate(wifi.AXIS_RA_AZ, -wifi.SLEW_SPEED_5, 1500 * time.Millisecond)
+		if err != nil {
+			fmt.Println("SetSlewRate error: ", err)
+		} else {
+			fmt.Println("SetSlewRate: done")
 		}
 	} else {
 		fmt.Println("nothing found!")

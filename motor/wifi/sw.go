@@ -259,4 +259,51 @@ func (mount *Mount) SWsetPosition(ax AXIS, numTicks int) (err0 error) {
 	return
 }
 
-type MotionMode int
+func (mount *Mount) SWsetStepPeriod(ax AXIS, clockDivider int) (err0 error) {
+	_, err0 = mount.swSend('I', ax, &clockDivider)
+	return
+}
+
+type MotionMode struct {
+	MmTrackingNotGoto bool
+	MmSpeedFast bool		// speedMedium takes precedence; speedLow is selected if (!speedMedium && !speedFast)
+	MmSpeedMedium bool		// overrides speedFast
+	MmSlowGoTo bool
+
+	IsCCW bool			// CW otherwise
+	IsSouth bool			// North otherwise
+	IsCoarseGoto bool		// Normal otherwise
+}
+func (mm MotionMode) String() string {
+	ret := ""
+	if mm.MmTrackingNotGoto { ret += "tracking" } else { ret += "goto" }
+	if mm.MmSpeedMedium { ret += " medSpeed" } else if mm.MmSpeedFast { ret += " fast" } else { ret += " slow" }
+	if mm.MmSlowGoTo { ret += " slowGoto" }
+	if mm.IsCCW { ret += " CCW" } else { ret += " CW" }
+	if mm.IsSouth { ret += " South" } else { ret += " North" }
+	if mm.IsCoarseGoto { ret += " isCoarseGoto" }
+	return ret
+}
+//  Channel will always be set to Tracking Mode after stopped
+func (mount *Mount) SWsetMotionMode(ax AXIS, mm MotionMode) (err0 error) {
+	// 00 						: goto	fast CW
+	// 10 D1_B0					: tracking slow CW
+	// 11 D1_B0		D2_B0			: tracking slow CCW
+	// 20 		D1_B1				: goto slow CW
+	// 21 		D1_B1	D2_B0			: goto slow CCW
+	// 30 D1_B0	D1_B1				: tracking fast CW
+	// 31 D1_B0	D1_B1	D2_B0			: tracking fast CCW
+	mode := 0
+	if mm.MmTrackingNotGoto { mode |= D1_B0 }
+	if mm.MmTrackingNotGoto == mm.MmSpeedFast { mode |= D1_B1 }
+	if mm.MmSpeedMedium { mode |= D1_B2 }
+	if mm.MmSlowGoTo{ mode |= D1_B3 }
+
+	if mm.IsCCW { mode |= D2_B0 }
+	if mm.IsSouth { mode |= D2_B1 }
+	if mm.IsCoarseGoto { mode |= D2_B2 }
+
+	//fmt.Printf("MOTION MODE: %02X\n", mode)
+	_, err0 = mount.swSend('G', ax, &mode)
+	return
+}
