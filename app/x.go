@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
         "github.com/kairos10/swapi/motor/wifi"
-	"time"
+	//"time"
 )
 
 
@@ -20,40 +20,13 @@ func main() {
 			}
 		}
 
-		cmds := []string { ":e1", ":", ":e2", ":e3", ":e1", ":", ":b1", ":a1" }
+		cmds := []string { ":e1", ":", ":e2" }
 		for _, cmd := range cmds {
 			response, err := mounts[0].SendCmdSync(cmd)
 			fmt.Printf("[%s]\t\tresponse[%s]\t\terr[%v]\n", cmd, response, err)
 		}
 
-		vs, err := mounts[0].SWgetVersion(wifi.AXIS_RA_AZ)
-		if err != nil {
-			fmt.Println("SWgetVersion error: ", err)
-		} else {
-			fmt.Println("SWgetVersion: ", vs)
-		}
-
-		vi, err := mounts[0].SWgetCountsPerRevolution(wifi.AXIS_RA_AZ)
-		if err != nil {
-			fmt.Println("SWgetCountsPerRevolution error: ", err)
-		} else {
-			fmt.Println("SWgetCountsPerRevolution: ", vi)
-		}
-
-		vi, err = mounts[0].SWgetTimerFreq()
-		if err != nil {
-			fmt.Println("SWgetTimerFreq error: ", err)
-		} else {
-			fmt.Println("SWgetTimerFreq: ", vi)
-		}
-
-		vi, err = mounts[0].SWgetHighSpeedRatio(wifi.AXIS_RA_AZ)
-		if err != nil {
-			fmt.Println("SWgetHighSpeedRatio error: ", err)
-		} else {
-			fmt.Println("SWgetHighSpeedRatio: ", vi)
-		}
-
+		/*
 		vi, err = mounts[0].SWgetPosition(wifi.AXIS_RA_AZ)
 		if err != nil {
 			fmt.Println("SWgetPosition error: ", err)
@@ -72,31 +45,9 @@ func main() {
 		} else {
 			fmt.Println("SWgetPosition: ", vi)
 		}
+		//*/
 
-		var mm wifi.MotionMode
-		mm.MmTrackingNotGoto = true
-		mm.MmSpeedFast = true
-		mm.MmSpeedMedium = false
-		mm.MmSlowGoTo = false
-		mm.IsCCW = true
-		mm.IsSouth = false
-		mm.IsCoarseGoto = false
-		err = mounts[0].SWsetMotionMode(wifi.AXIS_BOTH, mm)
-		if err != nil {
-			fmt.Println("SWsetMotionMode error: ", err)
-		} else {
-			fmt.Println("SWsetMotionMode done: ", mm)
-		}
-
-		err = mounts[0].SWstartMotion(wifi.AXIS_BOTH)
-		if err != nil {
-			fmt.Println("SWstartMotion error: ", err)
-		} else {
-			fmt.Println("SWstartMotion done")
-		}
-		time.Sleep(2*time.Second)
-
-		err = mounts[0].SWstopMotion(wifi.AXIS_BOTH)
+		err := mounts[0].SWstopMotion(wifi.AXIS_BOTH)
 		if err != nil {
 			fmt.Println("SWstopMotion error: ", err)
 		} else {
@@ -110,13 +61,6 @@ func main() {
 			fmt.Println("SWgetMotorStatus: ", vx)
 		}
 
-		err = mounts[0].SWstopMotion(wifi.AXIS_BOTH)
-		if err != nil {
-			fmt.Println("SWstopMotion error: ", err)
-		} else {
-			fmt.Println("SWstopMotion: done")
-		}
-
 		vy, err := mounts[0].SWgetExtendedInfo(wifi.AXIS_RA_AZ)
 		if err != nil {
 			fmt.Println("SWgetExtendedInfo error: ", err)
@@ -124,11 +68,33 @@ func main() {
 			fmt.Println("SWgetExtendedInfo: ", vy)
 		}
 
+		/*
 		err = mounts[0].SetSlewRate(wifi.AXIS_RA_AZ, -wifi.SLEW_SPEED_5, 1500 * time.Millisecond)
 		if err != nil {
 			fmt.Println("SetSlewRate error: ", err)
 		} else {
 			fmt.Println("SetSlewRate: done")
+		}
+		<- time.After(1 * time.Second)
+		*/
+
+		vi, err := mounts[0].SWgetPosition(wifi.AXIS_RA_AZ)
+		if err != nil {
+			fmt.Println("SWgetPosition error: ", err)
+		} else {
+			fmt.Println("SWgetPosition: ", vi)
+		}
+		err = mounts[0].GoToReletiveIncrement(wifi.AXIS_RA_AZ, -5000)
+		if err != nil {
+			fmt.Println("GoToTarget error: ", err)
+		} else {
+			fmt.Println("GoToTarget: done")
+		}
+		vi, err = mounts[0].SWgetPosition(wifi.AXIS_RA_AZ)
+		if err != nil {
+			fmt.Println("SWgetPosition error: ", err)
+		} else {
+			fmt.Println("SWgetPosition: ", vi)
 		}
 	} else {
 		fmt.Println("nothing found!")

@@ -2,6 +2,7 @@ package wifi
 
 import (
 	"time"
+	//"fmt"
 )
 
 func (mount *Mount) RetrieveMountParameters() (err0 error) {
@@ -34,9 +35,61 @@ func (mount *Mount) RetrieveMountParameters() (err0 error) {
 	return
 }
 
+func (mount *Mount) GoToReletiveIncrement(ax AXIS, relativeIncrement int) (err0 error) {
+	switch {
+	case true:
+		if relativeIncrement >  mount.MCParamCPR/2 || relativeIncrement < - mount.MCParamCPR/2 {
+			err0 = &cmdError{ERR06_VALUE_TOO_LARGE, "Value too large ["+string(relativeIncrement)+"] limit ["+string(mount.MCParamCPR/2)+"]"}
+		}
+		err0 = mount.StopMotor(ax)
+		if err0 != nil { break }
+
+		//crtPos, err0 := mount.SWgetPosition(ax)
+		//if err0 != nil { break }
+		//fmt.Printf("CURRENT POS[%v] increment[%v] target[%v]\n", crtPos, relativeIncrement, crtPos+relativeIncrement)
+
+		isCCW := relativeIncrement<0
+		if relativeIncrement<0 { relativeIncrement = -relativeIncrement }
+
+		isHighSpeed := relativeIncrement >  mount.MCParamCPR/2/10
+
+		var mm MotionMode
+		mm.MmTrackingNotGoto = false
+		mm.MmSpeedFast = isHighSpeed
+		mm.MmSpeedMedium = false
+		mm.MmSlowGoTo = false
+		mm.IsCCW = isCCW
+		mm.IsSouth = false
+		mm.IsCoarseGoto = false
+		err0 = mount.SWsetMotionMode(ax, mm)
+		if err0 != nil { break }
+
+		err0 = mount.SWsetGotoTarget(ax, relativeIncrement)
+		if err0 != nil { break }
+		err0 = mount.SWsetBrakeIncrement(ax, 3500)
+
+		err0 = mount.SWstartMotion(ax)
+		if err0 != nil {
+			_ = mount.SWstopMotion(ax)
+			break
+		}
+
+		for {
+			v, err0 := mount.SWgetMotorStatus(ax)
+			if err0 != nil || !v.IsRunning { break }
+			<- time.After(TIMEOUT_REPLY)
+			//crtPos, _ := mount.SWgetPosition(ax)
+			//fmt.Printf("GOTO crtPos=%d\n", crtPos)
+		}
+		if err0 != nil { break }
+	}
+	return
+}
+
 type SLEW_SPEED float64
 const (
-	SLEW_SPEED_SIDERAL SLEW_SPEED	=	360.0/24/3600
+	SLEW_SPEED_SIDERAL SLEW_SPEED	=	360.0/24/3600			// ideal sideral slewing rate for EQ mounts; for AltAz each axis has to be calculated depending on the current position
+	SLEW_SPEED_LUNAR SLEW_SPEED	=	(360.0 - 360/28)/24/3600	// in 28days the moon completes a full rotation, towards the East
 	SLEW_SPEED_0			=	SLEW_SPEED_SIDERAL / 2
 	SLEW_SPEED_1			=	SLEW_SPEED_SIDERAL * 1
 	SLEW_SPEED_2			=	SLEW_SPEED_SIDERAL * 8
@@ -58,14 +111,22 @@ func (mount *Mount) SetSlewRate(ax AXIS, speed SLEW_SPEED, duration time.Duratio
 
 	switch {
 	case true:
+		if speed <= SLEW_SPEED_SIDERAL/5000 {
+			// too slow, stop it
+			err0 = mount.SWstopMotion(ax)
+			break
+		}
+
 		if mount.MCParamFrequency == 0 || mount.MCParamCPR == 0 || mount.MCParamHighSpeedMult == 0 {
 			err0 = mount.RetrieveMountParameters()
 		}
 		if err0 != nil { break }
+
 		if mount.MCParamFrequency == 0 || mount.MCParamCPR == 0 || mount.MCParamHighSpeedMult == 0 {
 			err0 = &cmdError{ERR05_NOT_SUPPORTED, "The mount cannot be used to set the slew rate"}
 			break
 		}
+
 		clockDivider := int(SLEW_SPEED(mount.MCParamFrequency * 360 / mount.MCParamCPR) / speed)
 		if isHighSpeed {
 			clockDivider *= mount.MCParamHighSpeedMult

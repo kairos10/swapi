@@ -250,6 +250,16 @@ func (mount *Mount) SWgetExtendedInfo(ax AXIS) (ret0 ExtendedStatus, err0 error)
 	return
 }
 
+func (mount *Mount) SWsetGotoTarget(ax AXIS, ticks int) (err0 error) {
+	_, err0 = mount.swSend('H', ax, &ticks)
+	return
+}
+
+func (mount *Mount) SWsetBrakeIncrement(ax AXIS, ticks int) (err0 error) {
+	_, err0 = mount.swSend('M', ax, &ticks)
+	return
+}
+
 func (mount *Mount) SWsetPosition(ax AXIS, numTicks int) (err0 error) {
 	err0 = mount.StopMotor(ax)
 	if err0 == nil {

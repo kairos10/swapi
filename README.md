@@ -3,7 +3,9 @@ This GO module is usefull to control a wifi-aware *Skywatcher(c)* mount over wif
 
 The module implements a couple of SW methods to control the motors (**SW** functions) and a couple of combo methods to control the mount in a more complex manner.
 
-As of now, the API is not aware of the sky coordinates
+As of now, the API is not aware of the terrestrial or sky coordinates; therefore, tracking is only possible in EQ mode and the slew rate does not take into consideration the atmospheric diffraction
+
+**Note:** I'm in no way related to Skywatcher(c) and this API is based only on my very limited experimentation with the protocols involved. Please be aware that using this API for any reason may have unexpected consequences
 
 # usage
 To find all available mounts available on you network, use the **FindMounts()** function:
