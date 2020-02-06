@@ -35,24 +35,73 @@ func (mount *Mount) RetrieveMountParameters() (err0 error) {
 	return
 }
 
-func (mount *Mount) GoToRelativeIncrement(ax AXIS, relativeIncrement int) (err0 error) {
+func abs(x int) int { if x<0 { return -x } else { return x } }
+func sign(x int) int { if x<0 { return -1 } else { return 1 } }
+
+// normalize tick position value to [-CPR/2, CPR/2]
+func normalizeTickPosition(pos int, CPR int) int {
+        pos %= CPR // limit the number of ticks to only one rotation
+        if abs(pos) > CPR/2 {
+                pos -= sign(pos)*CPR
+                return normalizeTickPosition(pos, CPR)
+        }
+        return pos
+}
+
+// optimize tick increment, by changing CW>CCW or CCW>CW if the absolute value of the increment exceeds CPR/2
+func optimizeTickIncrement(incr int, CPR int) int {
+        incr %= CPR // limit the number of ticks to only one rotation
+        if incr > CPR/2 || incr < -CPR/2 {
+                incr -= sign(incr) * CPR
+        }
+        return incr
+}
+
+
+func (mount *Mount) GoToPosition(ax AXIS, tgtPos int) (err0 error) {
+	tgtPos = normalizeTickPosition(tgtPos, mount.MCParamCPR)
 	switch {
 	case true:
-		if relativeIncrement >  mount.MCParamCPR/2 || relativeIncrement < - mount.MCParamCPR/2 {
-			err0 = &cmdError{ERR06_VALUE_TOO_LARGE, "Value too large ["+string(relativeIncrement)+"] limit ["+string(mount.MCParamCPR/2)+"]"}
+		// should not reach this error, but let's leave it here for now
+		if abs(tgtPos) >  mount.MCParamCPR/2 {
+			err0 = &cmdError{ERR06_VALUE_TOO_LARGE, "Value too large ["+string(tgtPos)+"] limit ["+string(mount.MCParamCPR/2)+"]"}
 		}
+
 		err0 = mount.StopMotor(ax)
 		if err0 != nil { break }
 
 		crtPos, err0 := mount.SWgetPosition(ax)
-		targetPos := crtPos + relativeIncrement
+		if err0 != nil { break }
+
+		err0 = mount.GoToRelativeIncrement(ax, tgtPos - crtPos)
+		if err0 != nil { break }
+	}
+
+	return
+}
+
+// move the axis in the CW (positive increment) or CCW (negative increment) direction, for the given number of ticks
+func (mount *Mount) GoToRelativeIncrement(ax AXIS, originalRelativeIncrement int) (err0 error) {
+	relativeIncrement := optimizeTickIncrement(originalRelativeIncrement, mount.MCParamCPR)
+	switch {
+	case true:
+		// the increment should be already optimized, but yeah
+		if relativeIncrement >  mount.MCParamCPR/2 || relativeIncrement < - mount.MCParamCPR/2 {
+			err0 = &cmdError{ERR06_VALUE_TOO_LARGE, "Value too large ["+string(relativeIncrement)+"] limit ["+string(mount.MCParamCPR/2)+"]"}
+		}
+
+		err0 = mount.StopMotor(ax)
+		if err0 != nil { break }
+
+		crtPos, err0 := mount.SWgetPosition(ax)
+		targetPos := normalizeTickPosition(crtPos + originalRelativeIncrement, mount.MCParamCPR)
 		if err0 != nil { break }
 		//fmt.Printf("CURRENT POS[%v] increment[%v] target[%v]\n", crtPos, relativeIncrement, crtPos+relativeIncrement)
 
 		isCCW := relativeIncrement<0
 		if relativeIncrement<0 { relativeIncrement = -relativeIncrement }
 
-		isHighSpeed := relativeIncrement >  mount.MCParamCPR/2/10
+		isHighSpeed := relativeIncrement >  mount.MCParamCPR*5/360 // use highSpeed if the increment exceeds 5degrees
 
 		var mm MotionMode
 		mm.MmTrackingNotGoto = false

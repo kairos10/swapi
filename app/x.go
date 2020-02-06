@@ -78,13 +78,20 @@ func main() {
 		<- time.After(1 * time.Second)
 		*/
 
+		err = mounts[0].GoToPosition(wifi.AXIS_RA_AZ, 500)
+		if err != nil {
+			fmt.Println("GoToPosition error: ", err)
+		} else {
+			fmt.Println("GoToPosition: done")
+		}
+
 		vi, err := mounts[0].SWgetPosition(wifi.AXIS_RA_AZ)
 		if err != nil {
 			fmt.Println("SWgetPosition error: ", err)
 		} else {
 			fmt.Println("SWgetPosition: ", vi)
 		}
-		err = mounts[0].GoToRelativeIncrement(wifi.AXIS_RA_AZ, 10000)
+		err = mounts[0].GoToRelativeIncrement(wifi.AXIS_RA_AZ, 2073600-10000)
 		if err != nil {
 			fmt.Println("GoToRelativeIncrement error: ", err)
 		} else {
