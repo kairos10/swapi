@@ -52,3 +52,21 @@ To slew the RA axis CCW, at a medium speed, for one second:
                         }
 ...
 ```
+
+GOTO to a specific tick position
+```
+			err = m.GoToPosition(wifi.AXIS_RA_AZ, 0)
+```
+
+Move an axis for a specified number of ticks
+```
+			err = m.GoToRelativeIncrement(wifi.AXIS_RA_AZ, m.MCParamCPR/360) // 1 angular degree gets transformed to [MCParamCPR/360] ticks
+```
+
+# Samples
+
+## app/sw_joy.go
+controls a SW mount over wifi, from a gamepad connected to your computer
+```
+go run app/sw_joy.go
+```
