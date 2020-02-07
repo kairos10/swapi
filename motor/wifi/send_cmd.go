@@ -33,7 +33,7 @@ func (mount *Mount) SendCmdSync(cmd string) (ret []byte, err error) {
 		localConn.SetReadDeadline(time.Now().Add(TIMEOUT_REPLY * (NUM_REPEAT_CMD+1)))
 		n, _, err := localConn.ReadFromUDP(buf)
 		if err != nil {
-			log.Println("read error: ", err)
+			//log.Println("read error: ", err)
 		} else {
 			numReplies.Lock()
 			numReplies.pending--
