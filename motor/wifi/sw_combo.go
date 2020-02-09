@@ -244,4 +244,22 @@ func (mount *Mount) StopMotor(ax AXIS) (err0 error) {
 	return
 }
 
-
+func (mount *Mount) SetPhotoSwitch(duration time.Duration) (err0 error) {
+	switch {
+	case true:
+		err0 = mount.SWsetSwitch(AXIS_BOTH, 1)
+		if err0 != nil { break }
+		if duration == 0 {
+			// a bulb mode photo needs to calls: 1+0 ... 1+0
+			err0 = mount.SWsetSwitch(AXIS_BOTH, 0)
+		} else {
+			// in KEEP mode we don't want to wait for the duration of the exposure, so we only check for an error on the first OPEN command; meh
+			go func() {
+				<- time.After(duration)
+				_ = mount.SWsetSwitch(AXIS_BOTH, 0)
+				//fmt.Println("switch off")
+			}()
+		}
+	}
+	return
+}

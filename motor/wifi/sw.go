@@ -156,6 +156,11 @@ func (mount *Mount) SWstopMotion(ax AXIS) (err0 error) {
 	return
 }
 
+func (mount *Mount) SWsetSwitch(ax AXIS, switchPos int) (err0 error) {
+	_, err0 = mount.swSend('O', ax, &switchPos)
+	return
+}
+
 func (mount *Mount) SWstartMotion(ax AXIS) (err0 error) {
 	_, err0 = mount.swSend('J', ax, nil)
 	return

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
         "github.com/kairos10/swapi/motor/wifi"
-	//"time"
+	"time"
 )
 
 
@@ -24,6 +24,13 @@ func main() {
 		for _, cmd := range cmds {
 			response, err := mounts[0].SendCmdSync(cmd)
 			fmt.Printf("[%s]\t\tresponse[%s]\t\terr[%v]\n", cmd, response, err)
+		}
+
+		err := mounts[0].SetPhotoSwitch(1*time.Second)
+		if err != nil {
+			fmt.Println("SetPhotoSwitch error: ", err)
+		} else {
+			fmt.Println("SetPhotoSwitch: done")
 		}
 
 		/*
@@ -47,7 +54,7 @@ func main() {
 		}
 		//*/
 
-		err := mounts[0].SWstopMotion(wifi.AXIS_BOTH)
+		err = mounts[0].SWstopMotion(wifi.AXIS_BOTH)
 		if err != nil {
 			fmt.Println("SWstopMotion error: ", err)
 		} else {
