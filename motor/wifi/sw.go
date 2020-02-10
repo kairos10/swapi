@@ -255,6 +255,29 @@ func (mount *Mount) SWgetExtendedInfo(ax AXIS) (ret0 ExtendedStatus, err0 error)
 	return
 }
 
+type SW_EXTENDED_ATTR int
+const (
+	SW_EXTENDED_ATTR_PEC_TRAINING_START = 0x000000
+	SW_EXTENDED_ATTR_PEC_TRAINING_CANCEL = 0x010000
+	//
+	SW_EXTENDED_ATTR_PEC_TRACKING_START = 0x020000
+	SW_EXTENDED_ATTR_PEC_TRACKING_CANCEL = 0x030000
+	//
+	SW_EXTENDED_ATTR_DUAL_ENCODER_ENABLE = 0x040000
+	SW_EXTENDED_ATTR_DUAL_ENCODER_DISABLE = 0x050000
+	//
+	SW_EXTENDED_ATTR_FULL_TORQUE_ENABLE = 0x060100
+	SW_EXTENDED_ATTR_FULL_TORQUE_DISABLE = 0x060000
+	//
+	SW_EXTENDED_ATTR_SLEW_STRIDE = 0x070000
+	SW_EXTENDED_ATTR_INDEX_POSITION_RESET = 0x080000
+	SW_EXTENDED_ATTR_FLUSH_TO_ROM = 0x090000
+)
+func (mount *Mount) SWsetExtendedAttr(ax AXIS, speedId SW_EXTENDED_ATTR) (err0 error) {
+	_, err0 = mount.swSend('W', ax, (*int)(&speedId))
+	return
+}
+
 func (mount *Mount) SWsetGotoTarget(ax AXIS, ticks int) (err0 error) {
 	_, err0 = mount.swSend('H', ax, &ticks)
 	return
@@ -276,6 +299,19 @@ func (mount *Mount) SWsetPosition(ax AXIS, numTicks int) (err0 error) {
 
 func (mount *Mount) SWsetStepPeriod(ax AXIS, clockDivider int) (err0 error) {
 	_, err0 = mount.swSend('I', ax, &clockDivider)
+	return
+}
+
+type SW_AUTOGUIDE_SPEED_FRACTION_ID int
+const (
+	SW_AUTOGUIDE_SPEED_100PCT = 0 // sw constant: autoguide speed id, 1x
+	SW_AUTOGUIDE_SPEED_75PCT = 1 // sw constant: autoguide speed id, 0.75x
+	SW_AUTOGUIDE_SPEED_50PCT = 2 // sw constant: autoguide speed id, 0.5x
+	SW_AUTOGUIDE_SPEED_25PCT = 3 // sw constant: autoguide speed id, 0.25x
+	SW_AUTOGUIDE_SPEED_12PCT = 4 // sw constant: autoguide speed id, 0.125x
+)
+func (mount *Mount) SWsetAutoguideSpeed(ax AXIS, speedId SW_AUTOGUIDE_SPEED_FRACTION_ID) (err0 error) {
+	_, err0 = mount.swSend('P', ax, (*int)(&speedId))
 	return
 }
 

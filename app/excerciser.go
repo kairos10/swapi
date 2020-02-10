@@ -33,6 +33,13 @@ func main() {
 			fmt.Println("SetPhotoSwitch: done")
 		}
 
+		err = mounts[0].SWsetAutoguideSpeed(wifi.AXIS_BOTH, wifi.SW_AUTOGUIDE_SPEED_50PCT)
+		if err != nil {
+			fmt.Println("SWsetAutoguideSpeed error: ", err)
+		} else {
+			fmt.Println("SWsetAutoguideSpeed: done")
+		}
+
 		/*
 		vi, err = mounts[0].SWgetPosition(wifi.AXIS_RA_AZ)
 		if err != nil {
