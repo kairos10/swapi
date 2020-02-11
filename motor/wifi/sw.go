@@ -274,6 +274,7 @@ func (mount *Mount) SWgetExtendedInfo(ax AXIS) (ret0 ExtendedStatus, err0 error)
 	return
 }
 
+// commands for SWsetExtendedAttr()
 type SW_EXTENDED_ATTR int
 const (
 	SW_EXTENDED_ATTR_PEC_TRAINING_START = 0x000000
@@ -282,7 +283,7 @@ const (
 	SW_EXTENDED_ATTR_PEC_TRACKING_START = 0x000002
 	SW_EXTENDED_ATTR_PEC_TRACKING_CANCEL = 0x000003
 	//
-	SW_EXTENDED_ATTR_DUAL_ENCODER_ENABLE = 0x000004 // link the SWgetPosition with the secEnc data; only the primary CPR is needed
+	SW_EXTENDED_ATTR_DUAL_ENCODER_ENABLE = 0x000004 // use both primary and secondary encoders; the CPR does not change
 	SW_EXTENDED_ATTR_DUAL_ENCODER_DISABLE = 0x000005
 	//
 	SW_EXTENDED_ATTR_FULL_TORQUE_ENABLE = 0x000106

@@ -197,7 +197,7 @@ func main() {
 		if axAlt==0 {
 			swMount.SWstopMotion(wifi.AXIS_DEC_ALT)
 		} else {
-			speed := wifi.SLEW_SPEED(axAlt * float64(wifi.SLEW_SPEED_6 - wifi.SLEW_SPEED_0))
+			speed := wifi.SLEW_SPEED(axAlt * float64(wifi.SLEW_SPEED_7 - wifi.SLEW_SPEED_0))
 			swMount.SetSlewRate(wifi.AXIS_DEC_ALT, speed, 0)
 		}
 		if axAz ==0 {

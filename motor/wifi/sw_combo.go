@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// ask the mount to provide various parameters
 func (mount *Mount) RetrieveMountParameters() (err0 error) {
 	if mount.isInit { return }
 	switch {
@@ -75,6 +76,8 @@ func optimizeTickIncrement(incr int, CPR int) int {
 }
 
 
+// move axis to a specific position.
+// The target position sent to the mount is normalized to [-CPR/2 ... +CPR/2]
 func (mount *Mount) GoToPosition(ax AXIS, tgtPos int) (err0 error) {
 	tgtPos = normalizeTickPosition(tgtPos, mount.MCParamCPR)
 	switch {
@@ -97,7 +100,8 @@ func (mount *Mount) GoToPosition(ax AXIS, tgtPos int) (err0 error) {
 	return
 }
 
-// move the axis in the CW (positive increment) or CCW (negative increment) direction, for the given number of ticks
+// move the axis in the CW (positive increment) or CCW (negative increment) direction, for a given number of ticks.
+// If the originalRelativeIncrement is greater than CPR/2 (in absolute value), the actual value sent to the mount is normalized to [-CPR/2 ... +CPR/2]
 func (mount *Mount) GoToRelativeIncrement(ax AXIS, originalRelativeIncrement int) (err0 error) {
 	relativeIncrement := optimizeTickIncrement(originalRelativeIncrement, mount.MCParamCPR)
 	switch {
@@ -157,20 +161,21 @@ func (mount *Mount) GoToRelativeIncrement(ax AXIS, originalRelativeIncrement int
 	return
 }
 
+// Slew speed in degrees/second
 type SLEW_SPEED float64
 const (
 	SLEW_SPEED_SIDERAL SLEW_SPEED	=	360.0/24/3600			// ideal sideral slewing rate for EQ mounts; for AltAz each axis has to be calculated depending on the current position
 	SLEW_SPEED_LUNAR SLEW_SPEED	=	(360.0 - 360/28)/24/3600	// in 28days the moon completes a full rotation, towards the East
-	SLEW_SPEED_0			=	SLEW_SPEED_SIDERAL / 2
-	SLEW_SPEED_1			=	SLEW_SPEED_SIDERAL * 1
-	SLEW_SPEED_2			=	SLEW_SPEED_SIDERAL * 8
-	SLEW_SPEED_3			=	SLEW_SPEED_SIDERAL * 16
-	SLEW_SPEED_4			=	SLEW_SPEED_SIDERAL * 32
-	SLEW_SPEED_5			=	SLEW_SPEED_SIDERAL * 64
-	SLEW_SPEED_6			=	SLEW_SPEED_SIDERAL * 128
-	SLEW_SPEED_7			=	SLEW_SPEED_SIDERAL * 400
-	SLEW_SPEED_8			=	SLEW_SPEED_SIDERAL * 600
-	SLEW_SPEED_9			=	SLEW_SPEED_SIDERAL * 800
+	SLEW_SPEED_0			=	SLEW_SPEED_SIDERAL / 2		// sideral_speed/2
+	SLEW_SPEED_1			=	SLEW_SPEED_SIDERAL * 1		// sideral speed
+	SLEW_SPEED_2			=	SLEW_SPEED_SIDERAL * 8		// 8 * sideral_speed
+	SLEW_SPEED_3			=	SLEW_SPEED_SIDERAL * 16		// 16 * sideral_speed
+	SLEW_SPEED_4			=	SLEW_SPEED_SIDERAL * 32		// 32 * sideral_speed
+	SLEW_SPEED_5			=	SLEW_SPEED_SIDERAL * 64		// 64 * sideral_speed
+	SLEW_SPEED_6			=	SLEW_SPEED_SIDERAL * 128	// 128 * sideral_speed
+	SLEW_SPEED_7			=	SLEW_SPEED_SIDERAL * 400	// 400 * sideral_speed
+	SLEW_SPEED_8			=	SLEW_SPEED_SIDERAL * 600	// 600 * sideral_speed
+	SLEW_SPEED_9			=	SLEW_SPEED_SIDERAL * 800	// 800 * sideral_speed
 )
 // set slew rate (in deg/sec); usefull absolute values could be between 0.002 .. 3.3 deg/sec
 // positive speed move the axis CW, while a negative speed results in a CCW rotation
@@ -237,6 +242,7 @@ func (mount *Mount) SetSlewRate(ax AXIS, speed SLEW_SPEED, duration time.Duratio
 	return
 }
 
+// stop motion on the given axis
 func (mount *Mount) StopMotor(ax AXIS) (err0 error) {
 	if ax == AXIS_BOTH {
 		_ = mount.SWstopMotion(ax)
@@ -262,6 +268,7 @@ func (mount *Mount) StopMotor(ax AXIS) (err0 error) {
 	return
 }
 
+// cycle the camera trigger (On/Off), with a [duration] delay.
 func (mount *Mount) SetPhotoSwitch(duration time.Duration) (err0 error) {
 	switch {
 	case true:

@@ -41,8 +41,7 @@ func (m *Mount) String() (r string) {
 	return
 }
 
-// m := new(wifi.Mount)
-// m.Resolve("192.168.4.1", -1) // port defaults to 11880 [= SW_UDP_PORT]
+// Initialize an existing Mount with a static IP address
 func (m *Mount) Resolve(addr string, port int) (err0 error) {
 	if port <= 0 { port = SW_UDP_PORT }
 	if !strings.Contains(addr, ":") {
@@ -68,6 +67,8 @@ type cmdError struct {
 func (e *cmdError) Error() string {
 	return fmt.Sprintf("%d - %s", e.code, e.desc)
 }
+
+// various error codes
 const (
 	ERR01_AXIS	=	iota+100
 	ERR02_RESP_LEN
