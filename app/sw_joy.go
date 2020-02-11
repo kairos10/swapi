@@ -59,10 +59,13 @@ func startPolling(f func(), tOut time.Duration) {
 
 func runJoy(axStat *axisStatus) (err0 error) {
 	js, err := initJs()
-	if err == nil {
-		fmt.Println("joystick ok")
-	} else {
-		log.Fatal("joystick error")
+	if err != nil {
+		log.Printf("A joystick/gamepad has not been detected [%s]\n", err)
+	}
+	for ; js==nil; {
+		<- time.After(5 * time.Second)
+		js, err = initJs()
+		if err != nil { fmt.Printf(".") }
 	}
 
 	axisCount := js.AxisCount()
@@ -149,6 +152,7 @@ func main() {
 	var swMount *wifi.Mount
 	synCh := make(chan bool)
 
+	// prefetch mounts
 	go func() {
 		for j:=0; j<5; j++ {
 			mounts := wifi.FindMounts()
@@ -170,8 +174,16 @@ func main() {
 
 	<- synCh
 	if swMount == nil {
-		fmt.Println("no SW mount found on the network; bailing out...")
-		return
+		fmt.Println("no SW mount found on the network; retrying...")
+	}
+	for ; swMount==nil; {
+		mounts := wifi.FindMounts()
+		if len(mounts) < 1 {
+			fmt.Printf("*")
+			<- time.After(5 * time.Second)
+		} else {
+			swMount = mounts[0]
+		}
 	}
 	fmt.Println(swMount)
 
