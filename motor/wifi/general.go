@@ -15,11 +15,27 @@ type Mount struct {
 
 	localConn *net.UDPConn
 
+	isInit bool // true if the MC* parameters have been retrieved
+
 	MCversion     string
 
 	MCParamFrequency int
 	MCParamCPR int
 	MCParamHighSpeedMult int
+	MCParamT1Tracking1X int
+
+	HasDualEncoder bool
+	HasPPEC bool
+	HasOriginalIndex bool
+	HasEqAz bool
+	HasPolarScopeLED bool
+	HasAxisSeparateStart bool
+	HasTorqueSelection bool
+}
+func (m *Mount) String() (r string) {
+	if !m.isInit { _ = m.RetrieveMountParameters() }
+	r += fmt.Sprintf("Addr[%v] Ver[%s] DualEnc[%v] EqAz[%v] AxSepStart[%v]", m.UDPAddr, m.MCversion, m.HasDualEncoder, m.HasAxisSeparateStart, m.HasAxisSeparateStart)
+	return
 }
 
 const (

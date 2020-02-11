@@ -12,7 +12,13 @@ import (
 type AXIS int
 const (
 	AXIS_RA_AZ   = 1
+	AXIS_RA      = 1
+	AXIS_AZ      = 1
+	AXIS_1       = 1
 	AXIS_DEC_ALT = 2
+	AXIS_DEC     = 2
+	AXIS_ALT     = 2
+	AXIS_2       = 2
 	AXIS_BOTH    = 3
 )
 
@@ -137,6 +143,10 @@ func (mount *Mount) SWgetVersion(ax AXIS) (ret0 string, err0 error) {
 
 func (mount *Mount) SWgetCountsPerRevolution(ax AXIS) (int, error) {
 	return mount.swSend('a', ax, nil)
+}
+
+func (mount *Mount) SWgetT1Tracking1X() (int, error) {
+	return mount.swSend('D', AXIS_1, nil)
 }
 
 func (mount *Mount) SWgetHighSpeedRatio(ax AXIS) (int, error) {

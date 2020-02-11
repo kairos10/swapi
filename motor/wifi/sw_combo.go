@@ -6,30 +6,47 @@ import (
 )
 
 func (mount *Mount) RetrieveMountParameters() (err0 error) {
+	if mount.isInit { return }
 	switch {
 	case true:
 		version1, err0 := mount.SWgetVersion(AXIS_RA_AZ)
 		if err0 != nil { break }
 		version2, err0 := mount.SWgetVersion(AXIS_DEC_ALT)
 		if err0 != nil { break }
-		freq, err0 := mount.SWgetTimerFreq()
-		if err0 != nil { break }
+		
 		cpr1, err0 := mount.SWgetCountsPerRevolution(AXIS_RA_AZ)
 		if err0 != nil { break }
 		cpr2, err0 := mount.SWgetCountsPerRevolution(AXIS_DEC_ALT)
 		if err0 != nil { break }
+		
 		hsMult1, err0 := mount.SWgetHighSpeedRatio(AXIS_RA_AZ)
 		if err0 != nil { break }
 		hsMult2, err0 := mount.SWgetHighSpeedRatio(AXIS_DEC_ALT)
 		if err0 != nil { break }
+		
+		mount.MCParamFrequency, err0 = mount.SWgetTimerFreq()
+		if err0 != nil { break }
+		
+		mount.MCParamT1Tracking1X, err0 = mount.SWgetT1Tracking1X()
+		if err0 != nil { break }
+
+		resExt, err0 := mount.SWgetExtendedInfo(AXIS_1)
+		if err0 != nil { break }
+		mount.HasDualEncoder = resExt.SupportDualEncoder
+		mount.HasPPEC = resExt.SupportPPEC
+		mount.HasOriginalIndex = resExt.SupportOriginalIndex
+		mount.HasEqAz = resExt.SupportEQAZ
+		mount.HasPolarScopeLED = resExt.HasPolarScopeLED
+		mount.HasAxisSeparateStart = resExt.IsAxisSeparateStart
+		mount.HasTorqueSelection = resExt.HasTorqueSelection
 
 		if version1 != version2 || cpr1 != cpr2 || hsMult1 != hsMult2 {
 			err0 = &cmdError{ERR05_NOT_SUPPORTED, "The mount has different parameters for each AXIS; not supported"}
 		} else {
 			mount.MCversion = version2
-			mount.MCParamFrequency = freq
 			mount.MCParamCPR = cpr2
 			mount.MCParamHighSpeedMult = hsMult2
+			mount.isInit = true
 		}
 	}
 	return
@@ -177,6 +194,7 @@ func (mount *Mount) SetSlewRate(ax AXIS, speed SLEW_SPEED, duration time.Duratio
 		if err0 != nil { break }
 
 		if mount.MCParamFrequency == 0 || mount.MCParamCPR == 0 || mount.MCParamHighSpeedMult == 0 {
+			// to do: check against T1 from [Inquire 1X Tracking Period][:D1]; it should be ticks(SLEW_SPEED_SIDERAL)
 			err0 = &cmdError{ERR05_NOT_SUPPORTED, "The mount cannot be used to set the slew rate"}
 			break
 		}

@@ -13,6 +13,7 @@ func main() {
 		for i:=0; i<len(mounts); i++ {
 			m := mounts[i]
 			fmt.Printf("found: %s:%d, version[%s], time[%s]\n", m.UDPAddr.IP, m.UDPAddr.Port, m.MCversion, m.DiscoveryTime)
+			fmt.Printf("Mount: %v\n", m)
 
 			err := m.RetrieveMountParameters()
 			if err != nil {
