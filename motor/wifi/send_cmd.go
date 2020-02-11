@@ -39,6 +39,7 @@ func (mount *Mount) SendCmdSync(cmd string) (ret []byte, err error) {
 			numReplies.pending--
 			numReplies.Unlock()
 			ret = buf[:n-1]
+			//log.Println("YYY: ", string(cmd), " - ", string(ret))
 		}
 
 		synCh <- true

@@ -4,10 +4,12 @@ import (
 	"log"
 	"net"
 	"time"
+	"fmt"
 )
 
 func FindMounts() []*Mount {
-	lAddr, _ := net.ResolveUDPAddr("udp", "0.0.0.0:11881")
+	//lAddr, _ := net.ResolveUDPAddr("udp", "0.0.0.0:11881")
+	lAddr, _ := net.ResolveUDPAddr("udp", "0.0.0.0:")
 	lConn, err := net.ListenUDP("udp", lAddr)
 	if err != nil {
 		log.Fatal("FindMounts err: ", err)
@@ -44,7 +46,7 @@ func FindMounts() []*Mount {
 	}()
 	<-synCh1
 
-	rAddr, err := net.ResolveUDPAddr("udp", "255.255.255.255:11880")
+	rAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", SW_UDP_PORT))
 	if err != nil {
 		log.Fatal("FindMounts err: ", err)
 	}

@@ -161,6 +161,15 @@ func (mount *Mount) SWgetPosition(ax AXIS) (ret0 int, err0 error) {
 	return
 }
 
+// get the position of the secondary  encoder. it's unclear wether the CPR for the secondary encoder is available.
+func (mount *Mount) SWgetPositionExt(ax AXIS) (ret0 int, err0 error) {
+	ret0, err0 = mount.swSend('d', ax, nil)
+	if err0 == nil {
+		ret0 -= 0x800000
+	}
+	return
+}
+
 func (mount *Mount) SWstopMotion(ax AXIS) (err0 error) {
 	_, err0 = mount.swSend('K', ax, nil)
 	return
@@ -268,20 +277,20 @@ func (mount *Mount) SWgetExtendedInfo(ax AXIS) (ret0 ExtendedStatus, err0 error)
 type SW_EXTENDED_ATTR int
 const (
 	SW_EXTENDED_ATTR_PEC_TRAINING_START = 0x000000
-	SW_EXTENDED_ATTR_PEC_TRAINING_CANCEL = 0x010000
+	SW_EXTENDED_ATTR_PEC_TRAINING_CANCEL = 0x000001
 	//
-	SW_EXTENDED_ATTR_PEC_TRACKING_START = 0x020000
-	SW_EXTENDED_ATTR_PEC_TRACKING_CANCEL = 0x030000
+	SW_EXTENDED_ATTR_PEC_TRACKING_START = 0x000002
+	SW_EXTENDED_ATTR_PEC_TRACKING_CANCEL = 0x000003
 	//
-	SW_EXTENDED_ATTR_DUAL_ENCODER_ENABLE = 0x040000
-	SW_EXTENDED_ATTR_DUAL_ENCODER_DISABLE = 0x050000
+	SW_EXTENDED_ATTR_DUAL_ENCODER_ENABLE = 0x000004 // link the SWgetPosition with the secEnc data; only the primary CPR is needed
+	SW_EXTENDED_ATTR_DUAL_ENCODER_DISABLE = 0x000005
 	//
-	SW_EXTENDED_ATTR_FULL_TORQUE_ENABLE = 0x060100
-	SW_EXTENDED_ATTR_FULL_TORQUE_DISABLE = 0x060000
+	SW_EXTENDED_ATTR_FULL_TORQUE_ENABLE = 0x000106
+	SW_EXTENDED_ATTR_FULL_TORQUE_DISABLE = 0x000006
 	//
-	SW_EXTENDED_ATTR_SLEW_STRIDE = 0x070000
-	SW_EXTENDED_ATTR_INDEX_POSITION_RESET = 0x080000
-	SW_EXTENDED_ATTR_FLUSH_TO_ROM = 0x090000
+	SW_EXTENDED_ATTR_SLEW_STRIDE = 0x000007
+	SW_EXTENDED_ATTR_INDEX_POSITION_RESET = 0x000008
+	SW_EXTENDED_ATTR_FLUSH_TO_ROM = 0x000009
 )
 func (mount *Mount) SWsetExtendedAttr(ax AXIS, speedId SW_EXTENDED_ATTR) (err0 error) {
 	_, err0 = mount.swSend('W', ax, (*int)(&speedId))

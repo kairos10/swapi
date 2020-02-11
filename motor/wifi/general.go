@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const SW_UDP_PORT = 11880
+
 /*
 SW* methods mirror the motor commands
 */
@@ -40,9 +42,9 @@ func (m *Mount) String() (r string) {
 }
 
 // m := new(wifi.Mount)
-// m.Resolve("192.168.4.1", -1) // port defaults to 11880
+// m.Resolve("192.168.4.1", -1) // port defaults to 11880 [= SW_UDP_PORT]
 func (m *Mount) Resolve(addr string, port int) (err0 error) {
-	if port <= 0 { port = 11880 }
+	if port <= 0 { port = SW_UDP_PORT }
 	if !strings.Contains(addr, ":") {
 		addr = fmt.Sprintf("%s:%d", addr, port)
 	}
