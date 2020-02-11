@@ -4,6 +4,7 @@ import (
 	"net"
 	"time"
 	"fmt"
+	"strings"
 )
 
 /*
@@ -35,6 +36,21 @@ type Mount struct {
 func (m *Mount) String() (r string) {
 	if !m.isInit { _ = m.RetrieveMountParameters() }
 	r += fmt.Sprintf("Addr[%v] Ver[%s] DualEnc[%v] EqAz[%v] AxSepStart[%v]", m.UDPAddr, m.MCversion, m.HasDualEncoder, m.HasAxisSeparateStart, m.HasAxisSeparateStart)
+	return
+}
+
+// m := new(wifi.Mount)
+// m.Resolve("192.168.4.1", -1) // port defaults to 11880
+func (m *Mount) Resolve(addr string, port int) (err0 error) {
+	if port <= 0 { port = 11880 }
+	if !strings.Contains(addr, ":") {
+		addr = fmt.Sprintf("%s:%d", addr, port)
+	}
+	udpAddr, err0 := net.ResolveUDPAddr("udp", addr)
+	if err0 == nil {
+		m.UDPAddr = *udpAddr
+		err0 = m.RetrieveMountParameters()
+	}
 	return
 }
 
