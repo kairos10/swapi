@@ -134,8 +134,8 @@ func (m *Mount) swSend(cmd byte, ax AXIS, cmdParam *int) (ret0 int, err0 error) 
 }
 
 func (mount *Mount) SWgetVersion(ax AXIS) (ret0 string, err0 error) {
-	v, err0 := mount.swSend('e', ax, nil)
-	if err0 == nil {
+	v, err := mount.swSend('e', ax, nil)
+	if err0=err; err0 == nil {
 		ret0 = fmt.Sprintf("[%d.%d %02X]", v&0xff, v&0xff00>>8, v&0xff0000>>16)
 	}
 	return
@@ -210,8 +210,8 @@ func (ms MotorStatus) String() string {
 	return ret
 }
 func (mount *Mount) SWgetMotorStatus(ax AXIS) (ret0 MotorStatus, err0 error) {
-	v, err0 := mount.swSend('f', ax, nil)
-	if err0 == nil {
+	v, err := mount.swSend('f', ax, nil)
+	if err0=err; err0 == nil {
 		ret0.IsTracking = (v&D1_B0 > 0)
 		ret0.IsCCW = (v&D1_B1 > 0)
 		ret0.IsFast = (v&D1_B2 > 0)
@@ -257,8 +257,8 @@ func (es ExtendedStatus) String() string {
 }
 func (mount *Mount) SWgetExtendedInfo(ax AXIS) (ret0 ExtendedStatus, err0 error) {
 	ext := 0x000001
-	v, err0 := mount.swSend('q', ax, &ext)
-	if err0 == nil {
+	v, err := mount.swSend('q', ax, &ext)
+	if err0=err; err0 == nil {
 		ret0.IsPecTrainingOn = (v&D1_B0 > 0)
 		ret0.IsPecTrackingOn = (v&D1_B1 > 0)
 
@@ -305,6 +305,11 @@ func (mount *Mount) SWsetGotoTarget(ax AXIS, ticks int) (err0 error) {
 
 func (mount *Mount) SWsetBrakeIncrement(ax AXIS, ticks int) (err0 error) {
 	_, err0 = mount.swSend('M', ax, &ticks)
+	return
+}
+
+func (mount *Mount) SWsetInitializationDone(ax AXIS) (err0 error) {
+	_, err0 = mount.swSend('F', ax, nil)
 	return
 }
 

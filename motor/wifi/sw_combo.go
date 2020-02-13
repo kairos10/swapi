@@ -10,20 +10,20 @@ func (mount *Mount) RetrieveMountParameters() (err0 error) {
 	if mount.isInit { return }
 	switch {
 	case true:
-		version1, err0 := mount.SWgetVersion(AXIS_RA_AZ)
-		if err0 != nil { break }
-		version2, err0 := mount.SWgetVersion(AXIS_DEC_ALT)
-		if err0 != nil { break }
+		version1, err := mount.SWgetVersion(AXIS_RA_AZ)
+		if err0=err; err0 != nil { break }
+		version2, err := mount.SWgetVersion(AXIS_DEC_ALT)
+		if err0=err; err0 != nil { break }
 		
-		cpr1, err0 := mount.SWgetCountsPerRevolution(AXIS_RA_AZ)
-		if err0 != nil { break }
-		cpr2, err0 := mount.SWgetCountsPerRevolution(AXIS_DEC_ALT)
-		if err0 != nil { break }
+		cpr1, err := mount.SWgetCountsPerRevolution(AXIS_RA_AZ)
+		if err0=err; err0 != nil { break }
+		cpr2, err := mount.SWgetCountsPerRevolution(AXIS_DEC_ALT)
+		if err0=err; err0 != nil { break }
 		
-		hsMult1, err0 := mount.SWgetHighSpeedRatio(AXIS_RA_AZ)
-		if err0 != nil { break }
-		hsMult2, err0 := mount.SWgetHighSpeedRatio(AXIS_DEC_ALT)
-		if err0 != nil { break }
+		hsMult1, err := mount.SWgetHighSpeedRatio(AXIS_RA_AZ)
+		if err0=err; err0 != nil { break }
+		hsMult2, err := mount.SWgetHighSpeedRatio(AXIS_DEC_ALT)
+		if err0=err; err0 != nil { break }
 		
 		mount.MCParamFrequency, err0 = mount.SWgetTimerFreq()
 		if err0 != nil { break }
@@ -31,8 +31,8 @@ func (mount *Mount) RetrieveMountParameters() (err0 error) {
 		mount.MCParamT1Tracking1X, err0 = mount.SWgetT1Tracking1X()
 		if err0 != nil { break }
 
-		resExt, err0 := mount.SWgetExtendedInfo(AXIS_1)
-		if err0 != nil { break }
+		resExt, err := mount.SWgetExtendedInfo(AXIS_1)
+		if err0=err; err0 != nil { break }
 		mount.HasDualEncoder = resExt.SupportDualEncoder
 		mount.HasPPEC = resExt.SupportPPEC
 		mount.HasOriginalIndex = resExt.SupportOriginalIndex
@@ -49,6 +49,38 @@ func (mount *Mount) RetrieveMountParameters() (err0 error) {
 			mount.MCParamHighSpeedMult = hsMult2
 			mount.isInit = true
 		}
+	}
+	return
+}
+
+// initialize the mount with RA=0 and DEC=CPR/4, corresponding to 
+func (mount *Mount) InitializeEQ() (err0 error) {
+	switch {
+	case true:
+		if mount.MCParamCPR == 0 {
+			err0 = mount.RetrieveMountParameters()
+		}
+		if mount.MCParamCPR == 0 {
+			err0 = &cmdError{ERR03_PARAM, "Invalid mount parameter (CPR)"}
+			break
+		}
+		ms1, err := mount.SWgetMotorStatus(AXIS_RA)
+		if err0=err; err0 != nil { break }
+		ms2, err := mount.SWgetMotorStatus(AXIS_RA)
+		if err0=err; err0 != nil { break }
+		if ms1.IsInitDone || ms2.IsInitDone {
+			err0 = &cmdError{ERR07_ALREADY_INITIALIZED, "The mount is already initialized"}
+			break
+		}
+		err0 = mount.SWsetPosition(AXIS_RA, 0)
+		if err0 != nil { break }
+		err0 = mount.SWsetPosition(AXIS_DEC, mount.MCParamCPR/4)
+		if err0 != nil { break }
+		mount.SWsetInitializationDone(AXIS_BOTH)
+		mount.SWsetInitializationDone(AXIS_RA)
+		mount.SWsetInitializationDone(AXIS_DEC)
+
+		mount.isEqInit = true
 	}
 	return
 }
@@ -90,8 +122,8 @@ func (mount *Mount) GoToPosition(ax AXIS, tgtPos int) (err0 error) {
 		err0 = mount.StopMotor(ax)
 		if err0 != nil { break }
 
-		crtPos, err0 := mount.SWgetPosition(ax)
-		if err0 != nil { break }
+		crtPos, err := mount.SWgetPosition(ax)
+		if err0=err; err0 != nil { break }
 
 		err0 = mount.GoToRelativeIncrement(ax, tgtPos - crtPos)
 		if err0 != nil { break }
@@ -114,9 +146,9 @@ func (mount *Mount) GoToRelativeIncrement(ax AXIS, originalRelativeIncrement int
 		err0 = mount.StopMotor(ax)
 		if err0 != nil { break }
 
-		crtPos, err0 := mount.SWgetPosition(ax)
+		crtPos, err := mount.SWgetPosition(ax)
 		targetPos := normalizeTickPosition(crtPos + originalRelativeIncrement, mount.MCParamCPR)
-		if err0 != nil { break }
+		if err0=err; err0 != nil { break }
 		//fmt.Printf("CURRENT POS[%v] increment[%v] target[%v]\n", crtPos, relativeIncrement, crtPos+relativeIncrement)
 
 		isCCW := relativeIncrement<0
@@ -146,8 +178,8 @@ func (mount *Mount) GoToRelativeIncrement(ax AXIS, originalRelativeIncrement int
 		}
 
 		for {
-			v, err0 := mount.SWgetMotorStatus(ax)
-			if err0 != nil || !v.IsRunning { break }
+			v, err := mount.SWgetMotorStatus(ax)
+			if err0=err; err0 != nil || !v.IsRunning { break }
 			<- time.After(TIMEOUT_REPLY)
 			//crtPos, _ := mount.SWgetPosition(ax)
 			//fmt.Printf("GOTO crtPos=%d\n", crtPos)
@@ -255,8 +287,8 @@ func (mount *Mount) StopMotor(ax AXIS) (err0 error) {
 
 	isRunning := true
 	for x:=0; err0==nil && x<NUM_REPEAT_CMD; x++ {
-		v, err0 := mount.SWgetMotorStatus(ax)
-		if err0 == nil && !v.IsRunning {
+		v, err := mount.SWgetMotorStatus(ax)
+		if err0=err; err0 == nil && !v.IsRunning {
 			isRunning = false
 			break
 		}

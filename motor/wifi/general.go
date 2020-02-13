@@ -34,6 +34,8 @@ type Mount struct {
 	HasPolarScopeLED bool
 	HasAxisSeparateStart bool
 	HasTorqueSelection bool
+
+	isEqInit bool // InitializeEQ has been called on the mount, initializing DEC=0 and RA=CPR/4; for an already initialized mount, there is no way to tell wether the mount was initialized in AZ mode (0, 0) or EQ mode (CPR/4, 0)
 }
 func (m *Mount) String() (r string) {
 	if !m.isInit { _ = m.RetrieveMountParameters() }
@@ -76,5 +78,6 @@ const (
 	ERR04_NA
 	ERR05_NOT_SUPPORTED
 	ERR06_VALUE_TOO_LARGE
-	ERR07
+	ERR07_ALREADY_INITIALIZED
+	ERR08
 )
