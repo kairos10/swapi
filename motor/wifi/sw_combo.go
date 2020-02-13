@@ -85,6 +85,32 @@ func (mount *Mount) InitializeEQ() (err0 error) {
 	return
 }
 
+// flip meridian; usually the mount is initialized with InitializeEQ; the flip can be forced if the mount has been initialized externally (ie. by using the SynScanApp)
+func (mount *Mount) EqFlipMeridian(forceFlip bool) (err0 error) {
+	switch {
+	case true:
+		if !mount.isEqInit && !forceFlip {
+			err0 = &cmdError{ERR05_NOT_SUPPORTED, "Not initialized as an EQ mount"}
+			break
+		}
+		ra, err := mount.SWgetPosition(AXIS_RA)
+		if err0=err; err0 != nil { break }
+		dec, err := mount.SWgetPosition(AXIS_DEC)
+		if err0=err; err0 != nil { break }
+		fmt.Printf("BEFORE FLIP: %10d - %-10d\n", ra, dec)
+
+		err0 = mount.GoToRelativeIncrement(AXIS_RA, mount.MCParamCPR/2)
+		if err0 != nil { break }
+		err0 = mount.GoToPosition(AXIS_DEC, mount.MCParamCPR/2-dec)
+		if err0 != nil { break }
+
+		ra, _ = mount.SWgetPosition(AXIS_RA)
+		dec, _ = mount.SWgetPosition(AXIS_DEC)
+		fmt.Printf("AFTER FLIP: %10d - %-10d\n", ra, dec)
+	}
+	return
+}
+
 func abs(x int) int { if x<0 { return -x } else { return x } }
 func sign(x int) int { if x<0 { return -1 } else { return 1 } }
 
