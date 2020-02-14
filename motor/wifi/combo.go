@@ -38,7 +38,7 @@ func (mount *Mount) RetrieveMountParameters() (err0 error) {
 		mount.HasOriginalIndex = resExt.SupportOriginalIndex
 		mount.HasEqAz = resExt.SupportEQAZ
 		mount.HasPolarScopeLED = resExt.HasPolarScopeLED
-		mount.HasAxisSeparateStart = resExt.IsAxisSeparateStart
+		mount.MustSeparateStartAxis = resExt.IsAxisSeparateStart
 		mount.HasTorqueSelection = resExt.HasTorqueSelection
 
 		if version1 != version2 || cpr1 != cpr2 || hsMult1 != hsMult2 {
@@ -122,14 +122,18 @@ func (mount *Mount) EqFlipMeridian(forceFlip bool) (err0 error) {
 		tgtRa := normalizeTickPosition(ra+cpr/2, cpr)
 		tgtDec := normalizeTickPosition(cpr/2-dec, cpr)
 
-		err0 = mount.GoToPosition(AXIS_RA, 0)
-		if err0 != nil { break }
-		err0 = mount.GoToPosition(AXIS_DEC, cpr/4)
+		//err0 = mount.GoToPosition(AXIS_RA, 0)
+		//if err0 != nil { break }
+		//err0 = mount.GoToPosition(AXIS_DEC, cpr/4)
+		//if err0 != nil { break }
+		err0 = mount.GoToPositionParallel(0, cpr/4)
 		if err0 != nil { break }
 
-		err0 = mount.GoToPosition(AXIS_RA, tgtRa)
-		if err0 != nil { break }
-		err0 = mount.GoToPosition(AXIS_DEC, tgtDec)
+		//err0 = mount.GoToPosition(AXIS_RA, tgtRa)
+		//if err0 != nil { break }
+		//err0 = mount.GoToPosition(AXIS_DEC, tgtDec)
+		//if err0 != nil { break }
+		err0 = mount.GoToPositionParallel(tgtRa, tgtDec)
 		if err0 != nil { break }
 
 		ra, _ = mount.SWgetPosition(AXIS_RA)
@@ -162,6 +166,29 @@ func optimizeTickIncrement(incr int, cpr int) int {
 }
 
 
+func (mount *Mount) GoToPositionParallel(posRaAz, posDecAlt int) (err0 error) {
+	switch {
+	case true:
+		cpr, err := mount.GetParamCPR()
+		if err0=err; err0 != nil { break }
+		tgt := map[AXIS]int{}
+		tgt[AXIS_RA_AZ] = normalizeTickPosition(posRaAz, cpr)
+		tgt[AXIS_DEC_ALT] = normalizeTickPosition(posDecAlt, cpr)
+
+		err0 = mount.StopMotor(AXIS_BOTH)
+		if err0 != nil { break }
+
+		for ax, tgtPos := range tgt {
+			crtPos, err := mount.SWgetPosition(ax)
+			if err0=err; err0 != nil { break }
+			tgt[ax] = tgtPos - crtPos // transform targetPos to relativePos
+		}
+		if err0 != nil { break }
+		err0 = mount.GoToRelativeIncrementParallel(tgt[AXIS_RA_AZ], tgt[AXIS_DEC_ALT])
+	}
+	return
+}
+
 // move axis to a specific position.
 // The target position sent to the mount is normalized to [-CPR/2 ... +CPR/2]
 func (mount *Mount) GoToPosition(ax AXIS, tgtPos int) (err0 error) {
@@ -186,6 +213,69 @@ func (mount *Mount) GoToPosition(ax AXIS, tgtPos int) (err0 error) {
 		if err0 != nil { break }
 	}
 
+	return
+}
+
+func (mount *Mount) GoToRelativeIncrementParallel(incrRaAz, incrDecAlt int) (err0 error) {
+	switch {
+	case true:
+		cpr, err := mount.GetParamCPR()
+		if err0=err; err0 != nil { break }
+		incrMap := map[AXIS]int{}
+		incrMap[AXIS_RA_AZ] = optimizeTickIncrement(incrRaAz, cpr)
+		incrMap[AXIS_DEC_ALT] = optimizeTickIncrement(incrDecAlt, cpr)
+
+		if mount.MustSeparateStartAxis {
+			for ax, incr := range incrMap{
+				err0 = mount.GoToRelativeIncrement(ax, incr)
+				if err0 != nil { break }
+			}
+			break
+		}
+
+
+		for ax, incr := range incrMap{
+			err0 = mount.StopMotor(ax)
+			if err0 != nil { break }
+
+			isCCW := incr<0
+			if incr<0 { incr = -incr }
+
+			isHighSpeed := incr >  cpr*5/360 // use highSpeed if the increment exceeds 5degrees
+
+			var mm MotionMode
+			mm.MmTrackingNotGoto = false
+			mm.MmSpeedFast = isHighSpeed
+			mm.MmSpeedMedium = false
+			mm.MmSlowGoTo = false
+			mm.IsCCW = isCCW
+			mm.IsSouth = false
+			mm.IsCoarseGoto = false
+			err0 = mount.SWsetMotionMode(ax, mm)
+			if err0 != nil { break }
+
+			err0 = mount.SWsetGotoTargetRelative(ax, incr)
+			if err0 != nil { break }
+			err0 = mount.SWsetBrakeIncrement(ax, 3500)
+			if err0 != nil { break }
+			err0 = mount.SWstartMotion(ax)
+			if err0 != nil {
+				_ = mount.SWstopMotion(AXIS_BOTH)
+				break
+			}
+		}
+		if err0 != nil { break }
+
+		for {
+			v1, err1 := mount.SWgetMotorStatus(AXIS_RA_AZ)
+			v2, err2 := mount.SWgetMotorStatus(AXIS_DEC_ALT)
+			if err0=err1; err0 == nil { err0 = err2 }
+			if err0 != nil || !v1.IsRunning && !v2.IsRunning { break }
+			<- time.After(TIMEOUT_REPLY)
+		}
+		if err0 != nil { break }
+
+	}
 	return
 }
 
@@ -227,7 +317,7 @@ func (mount *Mount) GoToRelativeIncrement(ax AXIS, originalRelativeIncrement int
 		err0 = mount.SWsetMotionMode(ax, mm)
 		if err0 != nil { break }
 
-		err0 = mount.SWsetGotoTarget(ax, relativeIncrement)
+		err0 = mount.SWsetGotoTargetRelative(ax, relativeIncrement)
 		if err0 != nil { break }
 		err0 = mount.SWsetBrakeIncrement(ax, 3500)
 

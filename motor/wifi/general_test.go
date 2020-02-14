@@ -1,6 +1,6 @@
 package wifi_test
 
-import . "wifi"
+import "github.com/kairos10/swapi/motor/wifi"
 
 func ExampleMount_Resolve() {
 	m := new(wifi.Mount)

@@ -74,7 +74,7 @@ func (m *Mount) swSend(cmd byte, ax AXIS, cmdParam *int) (ret0 int, err0 error) 
 		'a':6,'b':6,'c':6,'d':6,'D':6,'e':6,'h':6,'i':6,'j':6,'k':6,'m':6,'q':6,'s':6,
 
 	}
-	if true &&
+	if 
 		 (cmdAxisType[cmd] != 0) &&
 		 (cmdAxisType[cmd] != 1 || ax!=AXIS_RA_AZ) &&
 		 (cmdAxisType[cmd] != 2 || ax!=AXIS_RA_AZ && ax!=AXIS_DEC_ALT) &&
@@ -298,8 +298,13 @@ func (mount *Mount) SWsetExtendedAttr(ax AXIS, speedId SW_EXTENDED_ATTR) (err0 e
 	return
 }
 
-func (mount *Mount) SWsetGotoTarget(ax AXIS, ticks int) (err0 error) {
+func (mount *Mount) SWsetGotoTargetRelative(ax AXIS, ticks int) (err0 error) {
 	_, err0 = mount.swSend('H', ax, &ticks)
+	return
+}
+
+func (mount *Mount) SWsetGotoTargetAbs(ax AXIS, tickPos int) (err0 error) {
+	_, err0 = mount.swSend('S', ax, &tickPos)
 	return
 }
 

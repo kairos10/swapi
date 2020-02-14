@@ -32,14 +32,14 @@ type Mount struct {
 	HasOriginalIndex bool
 	HasEqAz bool
 	HasPolarScopeLED bool
-	HasAxisSeparateStart bool
+	MustSeparateStartAxis bool
 	HasTorqueSelection bool
 
 	isEqInit bool // InitializeEQ has been called on the mount, initializing DEC=0 and RA=CPR/4; for an already initialized mount, there is no way to tell wether the mount was initialized in AZ mode (0, 0) or EQ mode (CPR/4, 0)
 }
 func (m *Mount) String() (r string) {
 	if !m.isInit { _ = m.RetrieveMountParameters() }
-	r += fmt.Sprintf("Addr[%v] Ver[%s] DualEnc[%v] EqAz[%v] AxSepStart[%v]", m.UDPAddr, m.MCversion, m.HasDualEncoder, m.HasAxisSeparateStart, m.HasAxisSeparateStart)
+	r += fmt.Sprintf("Addr[%v] Ver[%s] DualEnc[%v] EqAz[%v] AxSepStart[%v]", m.UDPAddr, m.MCversion, m.HasDualEncoder, m.HasEqAz, m.MustSeparateStartAxis)
 	return
 }
 
