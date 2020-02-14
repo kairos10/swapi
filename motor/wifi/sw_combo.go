@@ -53,32 +53,48 @@ func (mount *Mount) RetrieveMountParameters() (err0 error) {
 	return
 }
 
-// initialize the mount with RA=0 and DEC=CPR/4, corresponding to 
-func (mount *Mount) InitializeEQ() (err0 error) {
+func (mount *Mount) GetParamCPR() (ret0 int, err0 error) {
 	switch {
 	case true:
 		if mount.MCParamCPR == 0 {
 			err0 = mount.RetrieveMountParameters()
+			if err0 != nil { break }
 		}
 		if mount.MCParamCPR == 0 {
 			err0 = &cmdError{ERR03_PARAM, "Invalid mount parameter (CPR)"}
 			break
 		}
+
+		ret0 = mount.MCParamCPR
+	}
+	return
+}
+
+// initialize the mount with RA=0 and DEC=CPR/4, corresponding to 
+func (mount *Mount) InitializeEQ() (err0 error) {
+	switch {
+	case true:
+		cpr, err := mount.GetParamCPR()
+		if err0=err; err0 != nil { break }
+
 		ms1, err := mount.SWgetMotorStatus(AXIS_RA)
 		if err0=err; err0 != nil { break }
 		ms2, err := mount.SWgetMotorStatus(AXIS_RA)
 		if err0=err; err0 != nil { break }
+
 		if ms1.IsInitDone || ms2.IsInitDone {
 			err0 = &cmdError{ERR07_ALREADY_INITIALIZED, "The mount is already initialized"}
 			break
 		}
 		err0 = mount.SWsetPosition(AXIS_RA, 0)
 		if err0 != nil { break }
-		err0 = mount.SWsetPosition(AXIS_DEC, mount.MCParamCPR/4)
+		err0 = mount.SWsetInitializationDone(AXIS_RA)
 		if err0 != nil { break }
-		mount.SWsetInitializationDone(AXIS_BOTH)
-		mount.SWsetInitializationDone(AXIS_RA)
-		mount.SWsetInitializationDone(AXIS_DEC)
+
+		err0 = mount.SWsetPosition(AXIS_DEC, cpr/4)
+		if err0 != nil { break }
+		err0 = mount.SWsetInitializationDone(AXIS_DEC)
+		if err0 != nil { break }
 
 		mount.isEqInit = true
 	}
@@ -93,15 +109,27 @@ func (mount *Mount) EqFlipMeridian(forceFlip bool) (err0 error) {
 			err0 = &cmdError{ERR05_NOT_SUPPORTED, "Not initialized as an EQ mount"}
 			break
 		}
+
+		cpr, err := mount.GetParamCPR()
+		if err0=err; err0 != nil { break }
+
 		ra, err := mount.SWgetPosition(AXIS_RA)
 		if err0=err; err0 != nil { break }
 		dec, err := mount.SWgetPosition(AXIS_DEC)
 		if err0=err; err0 != nil { break }
 		fmt.Printf("BEFORE FLIP: %10d - %-10d\n", ra, dec)
 
-		err0 = mount.GoToRelativeIncrement(AXIS_RA, mount.MCParamCPR/2)
+		tgtRa := normalizeTickPosition(ra+cpr/2, cpr)
+		tgtDec := normalizeTickPosition(cpr/2-dec, cpr)
+
+		err0 = mount.GoToPosition(AXIS_RA, 0)
 		if err0 != nil { break }
-		err0 = mount.GoToPosition(AXIS_DEC, mount.MCParamCPR/2-dec)
+		err0 = mount.GoToPosition(AXIS_DEC, cpr/4)
+		if err0 != nil { break }
+
+		err0 = mount.GoToPosition(AXIS_RA, tgtRa)
+		if err0 != nil { break }
+		err0 = mount.GoToPosition(AXIS_DEC, tgtDec)
 		if err0 != nil { break }
 
 		ra, _ = mount.SWgetPosition(AXIS_RA)
@@ -115,20 +143,20 @@ func abs(x int) int { if x<0 { return -x } else { return x } }
 func sign(x int) int { if x<0 { return -1 } else { return 1 } }
 
 // normalize tick position value to [-CPR/2, CPR/2]
-func normalizeTickPosition(pos int, CPR int) int {
-        pos %= CPR // limit the number of ticks to only one rotation
-        if abs(pos) > CPR/2 {
-                pos -= sign(pos)*CPR
-                return normalizeTickPosition(pos, CPR)
+func normalizeTickPosition(pos int, cpr int) int {
+        pos %= cpr // limit the number of ticks to only one rotation
+        if abs(pos) > cpr/2 {
+                pos -= sign(pos)*cpr
+                return normalizeTickPosition(pos, cpr)
         }
         return pos
 }
 
 // optimize tick increment, by changing CW>CCW or CCW>CW if the absolute value of the increment exceeds CPR/2
-func optimizeTickIncrement(incr int, CPR int) int {
-        incr %= CPR // limit the number of ticks to only one rotation
-        if incr > CPR/2 || incr < -CPR/2 {
-                incr -= sign(incr) * CPR
+func optimizeTickIncrement(incr int, cpr int) int {
+        incr %= cpr // limit the number of ticks to only one rotation
+        if incr > cpr/2 || incr < -cpr/2 {
+                incr -= sign(incr) * cpr
         }
         return incr
 }
@@ -137,12 +165,15 @@ func optimizeTickIncrement(incr int, CPR int) int {
 // move axis to a specific position.
 // The target position sent to the mount is normalized to [-CPR/2 ... +CPR/2]
 func (mount *Mount) GoToPosition(ax AXIS, tgtPos int) (err0 error) {
-	tgtPos = normalizeTickPosition(tgtPos, mount.MCParamCPR)
 	switch {
 	case true:
+		cpr, err := mount.GetParamCPR()
+		if err0=err; err0 != nil { break }
+		tgtPos = normalizeTickPosition(tgtPos, cpr)
+
 		// should not reach this error, but let's leave it here for now
-		if abs(tgtPos) >  mount.MCParamCPR/2 {
-			err0 = &cmdError{ERR06_VALUE_TOO_LARGE, "Value too large ["+string(tgtPos)+"] limit ["+string(mount.MCParamCPR/2)+"]"}
+		if abs(tgtPos) >  cpr/2 {
+			err0 = &cmdError{ERR06_VALUE_TOO_LARGE, "Value too large ["+string(tgtPos)+"] limit ["+string(cpr/2)+"]"}
 		}
 
 		err0 = mount.StopMotor(ax)
@@ -161,26 +192,29 @@ func (mount *Mount) GoToPosition(ax AXIS, tgtPos int) (err0 error) {
 // move the axis in the CW (positive increment) or CCW (negative increment) direction, for a given number of ticks.
 // If the originalRelativeIncrement is greater than CPR/2 (in absolute value), the actual value sent to the mount is normalized to [-CPR/2 ... +CPR/2]
 func (mount *Mount) GoToRelativeIncrement(ax AXIS, originalRelativeIncrement int) (err0 error) {
-	relativeIncrement := optimizeTickIncrement(originalRelativeIncrement, mount.MCParamCPR)
 	switch {
 	case true:
+		cpr, err := mount.GetParamCPR()
+		if err0=err; err0 != nil { break }
+		relativeIncrement := optimizeTickIncrement(originalRelativeIncrement, cpr)
+
 		// the increment should be already optimized, but yeah
-		if relativeIncrement >  mount.MCParamCPR/2 || relativeIncrement < - mount.MCParamCPR/2 {
-			err0 = &cmdError{ERR06_VALUE_TOO_LARGE, "Value too large ["+string(relativeIncrement)+"] limit ["+string(mount.MCParamCPR/2)+"]"}
+		if relativeIncrement >  cpr/2 || relativeIncrement < - cpr/2 {
+			err0 = &cmdError{ERR06_VALUE_TOO_LARGE, "Value too large ["+string(relativeIncrement)+"] limit ["+string(cpr/2)+"]"}
 		}
 
 		err0 = mount.StopMotor(ax)
 		if err0 != nil { break }
 
 		crtPos, err := mount.SWgetPosition(ax)
-		targetPos := normalizeTickPosition(crtPos + originalRelativeIncrement, mount.MCParamCPR)
+		targetPos := normalizeTickPosition(crtPos + originalRelativeIncrement, cpr)
 		if err0=err; err0 != nil { break }
 		//fmt.Printf("CURRENT POS[%v] increment[%v] target[%v]\n", crtPos, relativeIncrement, crtPos+relativeIncrement)
 
 		isCCW := relativeIncrement<0
 		if relativeIncrement<0 { relativeIncrement = -relativeIncrement }
 
-		isHighSpeed := relativeIncrement >  mount.MCParamCPR*5/360 // use highSpeed if the increment exceeds 5degrees
+		isHighSpeed := relativeIncrement >  cpr*5/360 // use highSpeed if the increment exceeds 5degrees
 
 		var mm MotionMode
 		mm.MmTrackingNotGoto = false
