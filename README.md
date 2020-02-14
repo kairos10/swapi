@@ -70,3 +70,9 @@ controls a SW mount over wifi, from a gamepad connected to your computer
 ```
 go run app/sw_joy.go
 ```
+
+## app/equtil.go
+issues simple commands to a wifi connected motor controller (meridian flip, reset home position, etc)
+```
+go run app/equtil.go [command]
+```

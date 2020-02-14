@@ -71,30 +71,62 @@ func (mount *Mount) GetParamCPR() (ret0 int, err0 error) {
 	return
 }
 
-// initialize the mount with RA=0 and DEC=CPR/4, corresponding to 
+
+
+// check wether the MC' home position is already initialized as either an EQ or AZ mount; home pozition for AZ is [alt=0; az=0] and for EQ is [ra=0; dec=90°]
+func (mount *Mount) isMountModeInitialized() (ret0 bool, err0 error) {
+	switch {
+	case true:
+		ms1, err := mount.SWgetMotorStatus(AXIS_RA)
+		if err0=err; err0 != nil { break }
+		ms2, err := mount.SWgetMotorStatus(AXIS_RA)
+		if err0=err; err0 != nil { break }
+		ret0 = ms1.IsInitDone || ms2.IsInitDone
+	}
+	return
+}
+
+func (mount *Mount) setPosition(posRaAz, posDecAlt int) (err0 error) {
+	switch {
+	case true:
+		err0 = mount.SWsetPosition(AXIS_RA, posRaAz)
+		if err0 != nil { break }
+		err0 = mount.SWsetInitializationDone(AXIS_RA)
+		if err0 != nil { break }
+
+		err0 = mount.SWsetPosition(AXIS_DEC, posDecAlt)
+		if err0 != nil { break }
+		err0 = mount.SWsetInitializationDone(AXIS_DEC)
+		if err0 != nil { break }
+	}
+	return
+}
+// initialize the mount with RA=0 and DEC=CPR/4
 func (mount *Mount) InitializeEQ() (err0 error) {
+	switch {
+	case true:
+		isInit, err := mount.isMountModeInitialized()
+		if err0=err; err0 != nil { break }
+		if isInit {
+			err0 = &cmdError{ERR07_ALREADY_INITIALIZED, "The mount is already initialized"}
+			break
+		}
+
+		err0 = mount.ReInitializeEQ()
+		if err0 != nil { break }
+
+		mount.isEqInit = true
+	}
+	return
+}
+// REinitialize the mount with RA=0 and DEC=CPR/4, without checking wether the mount was previously initialized; calling this method assumes that the mount is in the equatorial HOME position (the scope is pointed towards the celestial pole)
+func (mount *Mount) ReInitializeEQ() (err0 error) {
 	switch {
 	case true:
 		cpr, err := mount.GetParamCPR()
 		if err0=err; err0 != nil { break }
 
-		ms1, err := mount.SWgetMotorStatus(AXIS_RA)
-		if err0=err; err0 != nil { break }
-		ms2, err := mount.SWgetMotorStatus(AXIS_RA)
-		if err0=err; err0 != nil { break }
-
-		if ms1.IsInitDone || ms2.IsInitDone {
-			err0 = &cmdError{ERR07_ALREADY_INITIALIZED, "The mount is already initialized"}
-			break
-		}
-		err0 = mount.SWsetPosition(AXIS_RA, 0)
-		if err0 != nil { break }
-		err0 = mount.SWsetInitializationDone(AXIS_RA)
-		if err0 != nil { break }
-
-		err0 = mount.SWsetPosition(AXIS_DEC, cpr/4)
-		if err0 != nil { break }
-		err0 = mount.SWsetInitializationDone(AXIS_DEC)
+		err0 = mount.setPosition(0, cpr/4)
 		if err0 != nil { break }
 
 		mount.isEqInit = true
@@ -108,7 +140,10 @@ func (mount *Mount) InitializeEQ() (err0 error) {
 func (mount *Mount) EqFlipMeridian(forceFlip bool) (err0 error) {
 	switch {
 	case true:
-		if !mount.isEqInit && !forceFlip {
+		isInit, err := mount.isMountModeInitialized()
+		if err0=err; err0 != nil { break }
+		if !isInit || (!mount.isEqInit && !forceFlip) {
+			// not initialized OR (initialized by an external program and NotForced)
 			err0 = &cmdError{ERR05_NOT_SUPPORTED, "Not initialized as an EQ mount"}
 			break
 		}
@@ -125,17 +160,9 @@ func (mount *Mount) EqFlipMeridian(forceFlip bool) (err0 error) {
 		tgtRa := normalizeTickPosition(ra+cpr/2, cpr)
 		tgtDec := normalizeTickPosition(cpr/2-dec, cpr)
 
-		//err0 = mount.GoToPosition(AXIS_RA, 0)
-		//if err0 != nil { break }
-		//err0 = mount.GoToPosition(AXIS_DEC, cpr/4)
-		//if err0 != nil { break }
 		err0 = mount.GoToPositionParallel(0, cpr/4)
 		if err0 != nil { break }
 
-		//err0 = mount.GoToPosition(AXIS_RA, tgtRa)
-		//if err0 != nil { break }
-		//err0 = mount.GoToPosition(AXIS_DEC, tgtDec)
-		//if err0 != nil { break }
 		err0 = mount.GoToPositionParallel(tgtRa, tgtDec)
 		if err0 != nil { break }
 
