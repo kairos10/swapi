@@ -188,6 +188,7 @@ func main() {
 	fmt.Println(swMount)
 
 	swMount.StopMotor(wifi.AXIS_BOTH)
+	defer swMount.StopMotor(wifi.AXIS_BOTH) // we don't want to accidentally leave the motors running on exit
 	startPolling(func() {
 		crtAxStat.Lock()
 		axAlt := crtAxStat.alt
