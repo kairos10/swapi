@@ -14,7 +14,8 @@ func doHelp(av0 string) {
 	fmt.Printf("\t\tsetHome\t-\tSet Equatorial HOME to the current position\n")
 	fmt.Printf("\t\tinitEQ\t-\tSet Equatorial HOME to the current position if the mount is not initialized, otherwise do nothing\n")
 	fmt.Printf("\t\tflip\t-\tPerform a meridian flip\n")
-	//fmt.Printf("\t\ttrackSideral\t-\tStart tracking at 1x sideral speed\n")
+	fmt.Printf("\t\tstop\t-\tStop motors\n")
+	fmt.Printf("\t\ttrackSideral -\tStart tracking at 1x sideral speed (might need to stop the motors first)\n")
 	fmt.Println("")
 }
 
@@ -26,7 +27,7 @@ func main() {
 		cmd = os.Args[1]
 	}
 
-	cmds := map[string]bool{"help":true, "setHome":true, "initEQ":true, "flip":true, "trackSideral":true}
+	cmds := map[string]bool{"help":true, "setHome":true, "initEQ":true, "flip":true, "trackSideral":true, "stop":true}
 	if cmd == "help" {
 		doHelp(os.Args[0])
 		os.Exit(0)
@@ -65,6 +66,12 @@ func main() {
 			err = m.EqFlipMeridian(true)
 			if err != nil {
 				fmt.Println("flip error: ", err)
+				os.Exit(2)
+			}
+		} else if cmd == "stop" {
+			err = m.StopMotor(wifi.AXIS_BOTH)
+			if err != nil {
+				fmt.Println("stop error: ", err)
 				os.Exit(2)
 			}
 		} else if cmd == "trackSideral" {
