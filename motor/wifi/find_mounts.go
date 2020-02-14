@@ -7,6 +7,7 @@ import (
 	"fmt"
 )
 
+// attempt to find the SW motor controllers connected on the current network
 func FindMounts() []*Mount {
 	//lAddr, _ := net.ResolveUDPAddr("udp", "0.0.0.0:11881")
 	lAddr, _ := net.ResolveUDPAddr("udp", "0.0.0.0:")

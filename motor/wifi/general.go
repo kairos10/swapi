@@ -7,20 +7,28 @@ import (
 	"strings"
 )
 
+// default UDP communication port
 const SW_UDP_PORT = 11880
 
+// UDP communication parameters
+const (
+	TIMEOUT_REPLY  = 100 * time.Millisecond // reply timeout in [ms]
+	NUM_REPEAT_CMD = 5                      // resend the [cmd] for how many times if there is no reply
+)
+
 /*
-SW* methods mirror the motor commands
+Information related to a networked motor controller.
+The SW* methods mirror the low level commands supported by the MC
 */
 type Mount struct {
-	UDPAddr       net.UDPAddr
-	DiscoveryTime time.Time
+	UDPAddr       net.UDPAddr // MC Address
+	DiscoveryTime time.Time // discovery time
 
-	localConn *net.UDPConn
+	localConn *net.UDPConn // local UDP address used to receive responses from the MC
 
 	isInit bool // true if the MC* parameters have been retrieved
 
-	MCversion     string
+	MCversion     string // MC version code, as reported by the mount
 
 	MCParamFrequency int
 	MCParamCPR int
@@ -56,11 +64,6 @@ func (m *Mount) Resolve(addr string, port int) (err0 error) {
 	}
 	return
 }
-
-const (
-	TIMEOUT_REPLY  = 100 * time.Millisecond // reply timeout in [ms]
-	NUM_REPEAT_CMD = 5                      // resend the [cmd] for how many times if there is no reply
-)
 
 type cmdError struct {
 	code byte

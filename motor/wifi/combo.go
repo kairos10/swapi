@@ -53,6 +53,7 @@ func (mount *Mount) RetrieveMountParameters() (err0 error) {
 	return
 }
 
+// get the CPR (Counts pe Revolution) parameter of the mount
 func (mount *Mount) GetParamCPR() (ret0 int, err0 error) {
 	switch {
 	case true:
@@ -101,7 +102,9 @@ func (mount *Mount) InitializeEQ() (err0 error) {
 	return
 }
 
-// flip meridian; usually the mount is initialized with InitializeEQ; the flip can be forced if the mount has been initialized externally (ie. by using the SynScanApp)
+// in a normal flow, the mount is initialized with InitializeEQ; however, the initialization can be done only once per power cycle and, if the MC is already initialized (ie. through the SynScanApp), there is no way to check wether the initialization was done in AZ or EQ mode.
+//
+// The forceFlip parameter can be used to force a flip, even if the initialization was performed from another application. If the parameter is false, a flip will be accepted only if the mount was initialized in EQ mode within the current program instance.
 func (mount *Mount) EqFlipMeridian(forceFlip bool) (err0 error) {
 	switch {
 	case true:
@@ -346,7 +349,7 @@ func (mount *Mount) GoToRelativeIncrement(ax AXIS, originalRelativeIncrement int
 // Slew speed in degrees/second
 type SLEW_SPEED float64
 const (
-	SLEW_SPEED_SIDERAL SLEW_SPEED	=	360.0/24/3600			// ideal sideral slewing rate for EQ mounts; for AltAz each axis has to be calculated depending on the current position
+	SLEW_SPEED_SIDERAL SLEW_SPEED	= 360.0/24/3600			// ideal sideral slewing rate for EQ mounts; for AltAz each axis has to be calculated depending on the current position
 	SLEW_SPEED_LUNAR SLEW_SPEED	=	(360.0 - 360/28)/24/3600	// in 28days the moon completes a full rotation, towards the East
 	SLEW_SPEED_0			=	SLEW_SPEED_SIDERAL / 2		// sideral_speed/2
 	SLEW_SPEED_1			=	SLEW_SPEED_SIDERAL * 1		// sideral speed

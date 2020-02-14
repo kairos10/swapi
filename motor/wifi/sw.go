@@ -9,20 +9,23 @@ import (
 	"encoding/hex"
 )
 
+// mount axis
 type AXIS int
+
+// mount axis
 const (
-	AXIS_RA_AZ   = 1
-	AXIS_RA      = 1
-	AXIS_AZ      = 1
-	AXIS_1       = 1
-	AXIS_DEC_ALT = 2
-	AXIS_DEC     = 2
-	AXIS_ALT     = 2
-	AXIS_2       = 2
-	AXIS_BOTH    = 3
+	AXIS_RA_AZ   AXIS = 1
+	AXIS_DEC_ALT AXIS = 2
+	AXIS_BOTH    AXIS = 3
+	AXIS_RA      = AXIS_RA_AZ
+	AXIS_AZ      = AXIS_RA_AZ
+	AXIS_1       = AXIS_RA_AZ
+	AXIS_DEC     = AXIS_DEC_ALT
+	AXIS_ALT     = AXIS_DEC_ALT
+	AXIS_2       = AXIS_DEC_ALT
 )
 
-// byte position: int -> sw representation
+// byte position: (int) to motor controller representation
 const (
 	D1	=	0x0000f0
 	D2	=	0x00000f
@@ -31,7 +34,7 @@ const (
 	D5	=	0xf00000
 	D6	=	0x0f0000
 )
-// bit position: int -> sw representation
+// bit position: (int) to motor controller representation
 const (
 	D2_B0	=	1 << iota
 	D2_B1
@@ -189,6 +192,7 @@ func (mount *Mount) SWgetTimerFreq() (int, error) {
 	return mount.swSend('b', 1, nil)
 }
 
+// current motor state, retrieved with the SWgetExtendedInfo method
 type MotorStatus struct {
 	IsTracking bool
 	IsCCW bool
@@ -226,6 +230,7 @@ func (mount *Mount) SWgetMotorStatus(ax AXIS) (ret0 MotorStatus, err0 error) {
 }
 
 
+// decoded status information, retrieved with SWgetExtendedInfo
 type ExtendedStatus struct {
 	IsPecTrainingOn bool
 	IsPecTrackingOn bool
@@ -277,21 +282,21 @@ func (mount *Mount) SWgetExtendedInfo(ax AXIS) (ret0 ExtendedStatus, err0 error)
 // commands for SWsetExtendedAttr()
 type SW_EXTENDED_ATTR int
 const (
-	SW_EXTENDED_ATTR_PEC_TRAINING_START = 0x000000
-	SW_EXTENDED_ATTR_PEC_TRAINING_CANCEL = 0x000001
+	SW_EXTENDED_ATTR_PEC_TRAINING_START	SLEW_SPEED	= 0x000000
+	SW_EXTENDED_ATTR_PEC_TRAINING_CANCEL	SLEW_SPEED	= 0x000001
 	//
-	SW_EXTENDED_ATTR_PEC_TRACKING_START = 0x000002
-	SW_EXTENDED_ATTR_PEC_TRACKING_CANCEL = 0x000003
+	SW_EXTENDED_ATTR_PEC_TRACKING_START	SLEW_SPEED	= 0x000002
+	SW_EXTENDED_ATTR_PEC_TRACKING_CANCEL	SLEW_SPEED	= 0x000003
 	//
-	SW_EXTENDED_ATTR_DUAL_ENCODER_ENABLE = 0x000004 // use both primary and secondary encoders; the CPR does not change
-	SW_EXTENDED_ATTR_DUAL_ENCODER_DISABLE = 0x000005
+	SW_EXTENDED_ATTR_DUAL_ENCODER_ENABLE	SLEW_SPEED	= 0x000004 // use both primary and secondary encoders; the CPR does not change
+	SW_EXTENDED_ATTR_DUAL_ENCODER_DISABLE	SLEW_SPEED	= 0x000005
 	//
-	SW_EXTENDED_ATTR_FULL_TORQUE_ENABLE = 0x000106
-	SW_EXTENDED_ATTR_FULL_TORQUE_DISABLE = 0x000006
+	SW_EXTENDED_ATTR_FULL_TORQUE_ENABLE	SLEW_SPEED	= 0x000106
+	SW_EXTENDED_ATTR_FULL_TORQUE_DISABLE	SLEW_SPEED	= 0x000006
 	//
-	SW_EXTENDED_ATTR_SLEW_STRIDE = 0x000007
-	SW_EXTENDED_ATTR_INDEX_POSITION_RESET = 0x000008
-	SW_EXTENDED_ATTR_FLUSH_TO_ROM = 0x000009
+	SW_EXTENDED_ATTR_SLEW_STRIDE		SLEW_SPEED	= 0x000007
+	SW_EXTENDED_ATTR_INDEX_POSITION_RESET	SLEW_SPEED	= 0x000008
+	SW_EXTENDED_ATTR_FLUSH_TO_ROM		SLEW_SPEED	= 0x000009
 )
 func (mount *Mount) SWsetExtendedAttr(ax AXIS, speedId SW_EXTENDED_ATTR) (err0 error) {
 	_, err0 = mount.swSend('W', ax, (*int)(&speedId))
@@ -334,17 +339,18 @@ func (mount *Mount) SWsetStepPeriod(ax AXIS, clockDivider int) (err0 error) {
 
 type SW_AUTOGUIDE_SPEED_FRACTION_ID int
 const (
-	SW_AUTOGUIDE_SPEED_100PCT = 0 // sw constant: autoguide speed id, 1x
-	SW_AUTOGUIDE_SPEED_75PCT = 1 // sw constant: autoguide speed id, 0.75x
-	SW_AUTOGUIDE_SPEED_50PCT = 2 // sw constant: autoguide speed id, 0.5x
-	SW_AUTOGUIDE_SPEED_25PCT = 3 // sw constant: autoguide speed id, 0.25x
-	SW_AUTOGUIDE_SPEED_12PCT = 4 // sw constant: autoguide speed id, 0.125x
+	SW_AUTOGUIDE_SPEED_100PCT	SW_AUTOGUIDE_SPEED_FRACTION_ID = 0 // sw constant: autoguide speed id, 1x
+	SW_AUTOGUIDE_SPEED_75PCT	SW_AUTOGUIDE_SPEED_FRACTION_ID = 1 // sw constant: autoguide speed id, 0.75x
+	SW_AUTOGUIDE_SPEED_50PCT	SW_AUTOGUIDE_SPEED_FRACTION_ID = 2 // sw constant: autoguide speed id, 0.5x
+	SW_AUTOGUIDE_SPEED_25PCT	SW_AUTOGUIDE_SPEED_FRACTION_ID = 3 // sw constant: autoguide speed id, 0.25x
+	SW_AUTOGUIDE_SPEED_12PCT	SW_AUTOGUIDE_SPEED_FRACTION_ID = 4 // sw constant: autoguide speed id, 0.125x
 )
 func (mount *Mount) SWsetAutoguideSpeed(ax AXIS, speedId SW_AUTOGUIDE_SPEED_FRACTION_ID) (err0 error) {
 	_, err0 = mount.swSend('P', ax, (*int)(&speedId))
 	return
 }
 
+// motor motion parameters, passed to the mount with the SWgetExtendedInfo method
 type MotionMode struct {
 	MmTrackingNotGoto bool
 	MmSpeedFast bool		// speedMedium takes precedence; speedLow is selected if (!speedMedium && !speedFast)
