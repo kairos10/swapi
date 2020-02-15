@@ -137,9 +137,11 @@ func (mount *Mount) ReInitializeEQ() (err0 error) {
 // in a normal flow, the mount is initialized with InitializeEQ; however, the initialization can be done only once per power cycle and, if the MC is already initialized (ie. through the SynScanApp), there is no way to check wether the initialization was done in AZ or EQ mode.
 //
 // The forceFlip parameter can be used to force a flip, even if the initialization was performed from another application. If the parameter is false, a flip will be accepted only if the mount was initialized in EQ mode within the current program instance.
-func (mount *Mount) EqFlipMeridian(forceFlip bool) (err0 error) {
+// If correctRa is true, the RA will be corrected for the time spent during the flip.
+func (mount *Mount) EqFlipMeridian(forceFlip bool, correctRa bool) (err0 error) {
 	switch {
 	case true:
+		startTime := time.Now()
 		isInit, err := mount.isMountModeInitialized()
 		if err0=err; err0 != nil { break }
 		if !isInit || (!mount.isEqInit && !forceFlip) {
@@ -166,9 +168,22 @@ func (mount *Mount) EqFlipMeridian(forceFlip bool) (err0 error) {
 		err0 = mount.GoToPositionParallel(tgtRa, tgtDec)
 		if err0 != nil { break }
 
+		if correctRa {
+			for i:=0; i<2; i++ {
+				elapsedMSec := SLEW_SPEED(time.Now().Sub(startTime) / time.Millisecond)
+				startTime = time.Now()
+				errRa := elapsedMSec/1000 * SLEW_SPEED_SIDERAL
+				errTicks := int(errRa * SLEW_SPEED(cpr)/360)
+				mount.GoToRelativeIncrement(AXIS_RA, errTicks)
+			}
+		}
+
+		elapsedMSec := SLEW_SPEED(time.Now().Sub(startTime) / time.Millisecond)
+		errRa := elapsedMSec/1000 * SLEW_SPEED_SIDERAL
+		errTicks := int(errRa * SLEW_SPEED(cpr)/360)
 		ra, _ = mount.SWgetPosition(AXIS_RA)
 		dec, _ = mount.SWgetPosition(AXIS_DEC)
-		fmt.Printf("AFTER FLIP: %10d - %-10d\n", ra, dec)
+		fmt.Printf("AFTER FLIP[%v msec; err %v°; err %v]: %10d - %-10d\n", elapsedMSec, errRa, errTicks, ra, dec)
 	}
 	return
 }

@@ -13,7 +13,7 @@ func doHelp(av0 string) {
 	fmt.Printf("\t\thelp\t-\tDisplay this message\n")
 	fmt.Printf("\t\tsetHome\t-\tSet Equatorial HOME to the current position\n")
 	fmt.Printf("\t\tinitEQ\t-\tSet Equatorial HOME to the current position if the mount is not initialized, otherwise do nothing\n")
-	fmt.Printf("\t\tflip\t-\tPerform a meridian flip\n")
+	fmt.Printf("\t\tflip\t-\tPerform a meridian flip, correcting the RA for the time spent to perform the flip\n")
 	fmt.Printf("\t\tstop\t-\tStop motors\n")
 	fmt.Printf("\t\ttrackSideral -\tStart tracking at 1x sideral speed (might need to stop the motors first)\n")
 	fmt.Println("")
@@ -27,7 +27,7 @@ func main() {
 		cmd = os.Args[1]
 	}
 
-	cmds := map[string]bool{"help":true, "setHome":true, "initEQ":true, "flip":true, "trackSideral":true, "stop":true}
+	cmds := map[string]bool{"help":true, "setHome":true, "initEQ":true, "flip":true, "trackSideral":true, "stop":true, "noop":true}
 	if cmd == "help" {
 		doHelp(os.Args[0])
 		os.Exit(0)
@@ -42,14 +42,8 @@ func main() {
 		m := mounts[0]
 		err := m.RetrieveMountParameters()
 
-		if cmd == "initEQ" {
-			err = m.InitializeEQ()
-			if err != nil {
-				fmt.Println("eq init error: ", err)
-			} else {
-				fmt.Println("eq initialized: ")
-			}
-			os.Exit(0)
+		if cmd == "noop" {
+			//
 		} else if cmd == "initEQ" {
 			err = m.InitializeEQ()
 			if err != nil {
@@ -62,8 +56,8 @@ func main() {
 				fmt.Println("setHome error: ", err)
 				os.Exit(2)
 			}
-		} else if cmd == "setHome" {
-			err = m.EqFlipMeridian(true)
+		} else if cmd == "flip" {
+			err = m.EqFlipMeridian(true, true)
 			if err != nil {
 				fmt.Println("flip error: ", err)
 				os.Exit(2)

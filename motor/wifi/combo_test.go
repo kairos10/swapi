@@ -29,7 +29,7 @@ func ExampleMount_EqFlipMeridian() {
 	ra, _ := m.SWgetPosition(wifi.AXIS_RA_AZ)
 	dec, _ := m.SWgetPosition(wifi.AXIS_DEC_ALT)
 	fmt.Println("BEFORE FLIP: ra=", ra, " dec=", dec)
-	m.EqFlipMeridian(true) // do the flip anyway, trusting that the mount was initialized in EQ mode
+	m.EqFlipMeridian(true, true) // do the flip anyway, trusting that the mount was initialized in EQ mode; correct the RA position to account for the time spend to perform the flip
 	ra, _ = m.SWgetPosition(wifi.AXIS_RA_AZ)
 	dec, _ = m.SWgetPosition(wifi.AXIS_DEC_ALT)
 	fmt.Println("AFTER FLIP: ra=", ra, " dec=", dec)
