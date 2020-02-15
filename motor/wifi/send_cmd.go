@@ -2,6 +2,7 @@ package wifi
 
 import (
 	"log"
+	"fmt"
 	"sync"
 	"net"
 	"time"
@@ -33,13 +34,13 @@ func (mount *Mount) SendCmdSync(cmd string) (ret []byte, err error) {
 		localConn.SetReadDeadline(time.Now().Add(TIMEOUT_REPLY * (NUM_REPEAT_CMD+1)))
 		n, _, err := localConn.ReadFromUDP(buf)
 		if err != nil {
-			//log.Println("read error: ", err)
+			//mount.log(fmt.Sprintln("read error: ", err))
 		} else {
 			numReplies.Lock()
 			numReplies.pending--
 			numReplies.Unlock()
 			ret = buf[:n-1]
-			//log.Println("YYY: ", string(cmd), " - ", string(ret))
+			//mount.log(fmt.Sprintln("YYY: ", string(cmd), " - ", string(ret)))
 		}
 
 		synCh <- true
@@ -67,7 +68,7 @@ func (mount *Mount) SendCmdSync(cmd string) (ret []byte, err error) {
 		// reuse localAddr
 		mount.localConn = localConn
 	} else {
-		log.Println("localConn not in sync; pending=", numReplies.pending)
+		mount.log(fmt.Sprintln("localConn not in sync; pending=", numReplies.pending))
 		mount.localConn = nil
 		defer localConn.Close()
 	}

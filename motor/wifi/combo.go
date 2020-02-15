@@ -157,7 +157,7 @@ func (mount *Mount) EqFlipMeridian(forceFlip bool, correctRa bool) (err0 error) 
 		if err0=err; err0 != nil { break }
 		dec, err := mount.SWgetPosition(AXIS_DEC)
 		if err0=err; err0 != nil { break }
-		fmt.Printf("BEFORE FLIP: %10d - %-10d\n", ra, dec)
+		mount.log(fmt.Sprintf("BEFORE FLIP: %10d - %-10d\n", ra, dec))
 
 		tgtRa := normalizeTickPosition(ra+cpr/2, cpr)
 		tgtDec := normalizeTickPosition(cpr/2-dec, cpr)
@@ -183,7 +183,7 @@ func (mount *Mount) EqFlipMeridian(forceFlip bool, correctRa bool) (err0 error) 
 		errTicks := int(errRa * SLEW_SPEED(cpr)/360)
 		ra, _ = mount.SWgetPosition(AXIS_RA)
 		dec, _ = mount.SWgetPosition(AXIS_DEC)
-		fmt.Printf("AFTER FLIP[%v msec; err %v°; err %v]: %10d - %-10d\n", elapsedMSec, errRa, errTicks, ra, dec)
+		mount.log(fmt.Sprintf("AFTER FLIP[%v msec; err %v°; err %v]: %10d - %-10d\n", elapsedMSec, errRa, errTicks, ra, dec))
 	}
 	return
 }
@@ -344,7 +344,7 @@ func (mount *Mount) GoToRelativeIncrement(ax AXIS, originalRelativeIncrement int
 		crtPos, err := mount.SWgetPosition(ax)
 		targetPos := normalizeTickPosition(crtPos + originalRelativeIncrement, cpr)
 		if err0=err; err0 != nil { break }
-		//fmt.Printf("CURRENT POS[%v] increment[%v] target[%v]\n", crtPos, relativeIncrement, crtPos+relativeIncrement)
+		//mount.log(fmt.Sprintf("CURRENT POS[%v] increment[%v] target[%v]\n", crtPos, relativeIncrement, crtPos+relativeIncrement))
 
 		isCCW := relativeIncrement<0
 		if relativeIncrement<0 { relativeIncrement = -relativeIncrement }
@@ -377,11 +377,11 @@ func (mount *Mount) GoToRelativeIncrement(ax AXIS, originalRelativeIncrement int
 			if err0=err; err0 != nil || !v.IsRunning { break }
 			<- time.After(TIMEOUT_REPLY)
 			//crtPos, _ := mount.SWgetPosition(ax)
-			//fmt.Printf("GOTO crtPos=%d\n", crtPos)
+			//mount.log(fmt.Sprintf("GOTO crtPos=%d\n", crtPos))
 		}
 		crtPos, _ = mount.SWgetPosition(ax)
 		if crtPos != targetPos {
-			fmt.Printf("RELATIVE GOTO: initialTarget[%d] currentPos[%d] diff[%d]\n", targetPos, crtPos, targetPos-crtPos)
+			mount.log(fmt.Sprintf("RELATIVE GOTO: initialTarget[%d] currentPos[%d] diff[%d]\n", targetPos, crtPos, targetPos-crtPos))
 		}
 		if err0 != nil { break }
 	}
@@ -436,7 +436,7 @@ func (mount *Mount) SetSlewRate(ax AXIS, speed SLEW_SPEED, duration time.Duratio
 			clockDivider *= mount.MCParamHighSpeedMult
 		}
 		err0 = mount.SWsetStepPeriod(ax, clockDivider)
-		//fmt.Printf("speed=%f highSpeed=%v preset=%d", speed, isHighSpeed, clockDivider)
+		//mount.log(fmt.Sprintf("speed=%f highSpeed=%v preset=%d", speed, isHighSpeed, clockDivider))
 		if err0 != nil { break }
 
 		var mm MotionMode
@@ -509,7 +509,7 @@ func (mount *Mount) SetPhotoSwitch(duration time.Duration) (err0 error) {
 			go func() {
 				<- time.After(duration)
 				_ = mount.SWsetSwitch(AXIS_BOTH, 0)
-				//fmt.Println("switch off")
+				//mount.log(fmt.Sprintln("switch off"))
 			}()
 		}
 	}

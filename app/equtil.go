@@ -41,6 +41,7 @@ func main() {
 	if len(mounts) > 0 {
 		m := mounts[0]
 		err := m.RetrieveMountParameters()
+		m.LoggerFunc = func(s string) { fmt.Printf(s) }
 
 		if cmd == "noop" {
 			//

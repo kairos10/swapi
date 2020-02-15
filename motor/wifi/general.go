@@ -21,6 +21,7 @@ Information related to a networked motor controller.
 The SW* methods mirror the low level commands supported by the MC
 */
 type Mount struct {
+	LoggerFunc func(string)
 	UDPAddr       net.UDPAddr // MC Address
 	DiscoveryTime time.Time // discovery time
 
@@ -49,6 +50,12 @@ func (m *Mount) String() (r string) {
 	if !m.isInit { _ = m.RetrieveMountParameters() }
 	r += fmt.Sprintf("Addr[%v] Ver[%s] DualEnc[%v] EqAz[%v] AxSepStart[%v]", m.UDPAddr, m.MCversion, m.HasDualEncoder, m.HasEqAz, m.MustSeparateStartAxis)
 	return
+}
+
+func (m *Mount) log(s string) {
+	if m.LoggerFunc != nil {
+		m.LoggerFunc(s)
+	}
 }
 
 // Initialize an existing Mount with a static IP address

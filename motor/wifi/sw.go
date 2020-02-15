@@ -131,7 +131,7 @@ func (m *Mount) swSend(cmd byte, ax AXIS, cmdParam *int) (ret0 int, err0 error) 
 				ret0 = (ret0<<8) + int(decodeBuf[x])
 			}
 		}
-		//fmt.Println("XXX: ", cmdStr, " -- ", string(b))
+		//m.log(fmt.Sprintln("XXX: ", cmdStr, " -- ", string(b)))
 	}
 	return
 }
@@ -390,7 +390,7 @@ func (mount *Mount) SWsetMotionMode(ax AXIS, mm MotionMode) (err0 error) {
 	if mm.IsSouth { mode |= D2_B1 }
 	if mm.IsCoarseGoto { mode |= D2_B2 }
 
-	//fmt.Printf("MOTION MODE: %02X\n", mode)
+	//mount.log(fmt.Sprintf("MOTION MODE: %02X\n", mode))
 	_, err0 = mount.swSend('G', ax, &mode)
 	return
 }
