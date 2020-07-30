@@ -3,11 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
+	"sync"
+	"time"
+
 	"github.com/kairos10/swapi/motor/wifi"
 	"github.com/simulatedsimian/joystick"
-	"log"
-	"time"
-	"sync"
 )
 
 type axisStatus struct {
@@ -16,8 +17,8 @@ type axisStatus struct {
 }
 
 const (
-	ZERO_CALIBRATION_ROUNDS = 30
-	POLL_INTERVAL           = 100 * time.Millisecond
+	// JSPollInterval gives the joystick polling interval
+	JSPollInterval = 100 * time.Millisecond
 )
 
 func initJs() (joystick.Joystick, error) {
@@ -37,21 +38,22 @@ func initJs() (joystick.Joystick, error) {
 	return js, err0
 }
 func startPolling(f func(), tOut time.Duration) {
-	ticker := time.NewTicker(POLL_INTERVAL)
+	ticker := time.NewTicker(JSPollInterval)
 	var tOutChan <-chan time.Time
 	if tOut != 0 {
 		tOutChan = time.After(tOut)
 	}
-	for cont:=true; cont; {
+	for cont := true; cont; {
 		if tOut != 0 {
 			select {
-			case <- ticker.C: f()
-			case <- tOutChan:
+			case <-ticker.C:
+				f()
+			case <-tOutChan:
 				cont = false
 				break
 			}
 		} else {
-			<- ticker.C
+			<-ticker.C
 			f()
 		}
 	}
@@ -62,10 +64,12 @@ func runJoy(axStat *axisStatus) (err0 error) {
 	if err != nil {
 		log.Printf("A joystick/gamepad has not been detected [%s]\n", err)
 	}
-	for ; js==nil; {
-		<- time.After(5 * time.Second)
+	for js == nil {
+		<-time.After(5 * time.Second)
 		js, err = initJs()
-		if err != nil { fmt.Printf(".") }
+		if err != nil {
+			fmt.Printf(".")
+		}
 	}
 
 	axisCount := js.AxisCount()
@@ -89,15 +93,19 @@ func runJoy(axStat *axisStatus) (err0 error) {
 				isFirstRun = false
 				continue
 			}
-			if a<aMinMax.zeroMin { aMinMax.zeroMin = a }
-			if a>aMinMax.zeroMax { aMinMax.zeroMax = a }
+			if a < aMinMax.zeroMin {
+				aMinMax.zeroMin = a
+			}
+			if a > aMinMax.zeroMax {
+				aMinMax.zeroMax = a
+			}
 		}
 	}, 2*time.Second)
 	fmt.Println("zero point evaluated")
 
 	fmt.Println("please move one stick, then leave it free for 1 second")
 	selectedAxis := make(map[int]bool)
-	for hasMoved:=false; hasMoved||len(selectedAxis)<2; {
+	for hasMoved := false; hasMoved || len(selectedAxis) < 2; {
 		hasMoved = false
 
 		startPolling(func() {
@@ -108,15 +116,23 @@ func runJoy(axStat *axisStatus) (err0 error) {
 			for axis := 0; axis < axisCount; axis++ {
 				a := jinfo.AxisData[axis]
 				aMinMax := &axMinMax[axis]
-				if a<aMinMax.min { aMinMax.min = a; hasMoved=true }
-				if a>aMinMax.max { aMinMax.max = a; hasMoved=true }
-				if aMinMax.min<aMinMax.zeroMin && aMinMax.max>aMinMax.zeroMax { selectedAxis[axis] = true }
+				if a < aMinMax.min {
+					aMinMax.min = a
+					hasMoved = true
+				}
+				if a > aMinMax.max {
+					aMinMax.max = a
+					hasMoved = true
+				}
+				if aMinMax.min < aMinMax.zeroMin && aMinMax.max > aMinMax.zeroMax {
+					selectedAxis[axis] = true
+				}
 			}
 		}, 1*time.Second)
 
 	}
 	fmt.Println("max throw evaluated", selectedAxis)
-	<- time.After(1*time.Second)
+	<-time.After(1 * time.Second)
 
 	go func() {
 		startPolling(func() {
@@ -124,21 +140,29 @@ func runJoy(axStat *axisStatus) (err0 error) {
 			if err != nil {
 				log.Println("JOYSTICK error: ", err)
 			}
-			axId := 0
-			for axis, _ := range selectedAxis {
-				axId++
+			axID := 0
+			for axis := range selectedAxis {
+				axID++
 				a := jinfo.AxisData[axis]
 				aMinMax := &axMinMax[axis]
-				if a<aMinMax.min { aMinMax.min = a }
-				if a>aMinMax.max { aMinMax.max = a }
+				if a < aMinMax.min {
+					aMinMax.min = a
+				}
+				if a > aMinMax.max {
+					aMinMax.max = a
+				}
 				v := float64(0)
-				if a<aMinMax.zeroMin {
-					v = -float64(a) / float64(aMinMax.min - aMinMax.zeroMin)
-				} else if a>aMinMax.zeroMax {
-					v = float64(a) / float64(aMinMax.max - aMinMax.zeroMax)
+				if a < aMinMax.zeroMin {
+					v = -float64(a) / float64(aMinMax.min-aMinMax.zeroMin)
+				} else if a > aMinMax.zeroMax {
+					v = float64(a) / float64(aMinMax.max-aMinMax.zeroMax)
 				}
 				axStat.Lock()
-				if axId == 1 { axStat.alt = v } else if axId == 2 { axStat.az = v }
+				if axID == 1 {
+					axStat.alt = v
+				} else if axID == 2 {
+					axStat.az = v
+				}
 				axStat.Unlock()
 			}
 		}, 0)
@@ -154,7 +178,7 @@ func main() {
 
 	// prefetch mounts
 	go func() {
-		for j:=0; j<5; j++ {
+		for j := 0; j < 5; j++ {
 			mounts := wifi.FindMounts()
 			if len(mounts) > 0 {
 				swMount = mounts[0]
@@ -172,15 +196,15 @@ func main() {
 	}
 	fmt.Println("joystick ok")
 
-	<- synCh
+	<-synCh
 	if swMount == nil {
 		fmt.Println("no SW mount found on the network; retrying...")
 	}
-	for ; swMount==nil; {
+	for swMount == nil {
 		mounts := wifi.FindMounts()
 		if len(mounts) < 1 {
 			fmt.Printf("*")
-			<- time.After(5 * time.Second)
+			<-time.After(5 * time.Second)
 		} else {
 			swMount = mounts[0]
 		}
@@ -195,16 +219,16 @@ func main() {
 		axAz := crtAxStat.az
 		crtAxStat.Unlock()
 
-		if axAlt==0 {
+		if axAlt == 0 {
 			swMount.SWstopMotion(wifi.AXIS_DEC_ALT)
 		} else {
-			speed := wifi.SLEW_SPEED(axAlt * float64(wifi.SLEW_SPEED_7 - wifi.SLEW_SPEED_0))
+			speed := wifi.SLEW_SPEED(axAlt * float64(wifi.SLEW_SPEED_7-wifi.SLEW_SPEED_0))
 			swMount.SetSlewRate(wifi.AXIS_DEC_ALT, speed, 0)
 		}
-		if axAz ==0 {
+		if axAz == 0 {
 			swMount.SWstopMotion(wifi.AXIS_RA_AZ)
 		} else {
-			speed := wifi.SLEW_SPEED(axAz * float64(wifi.SLEW_SPEED_6 - wifi.SLEW_SPEED_0))
+			speed := wifi.SLEW_SPEED(axAz * float64(wifi.SLEW_SPEED_6-wifi.SLEW_SPEED_0))
 			swMount.SetSlewRate(wifi.AXIS_RA_AZ, speed, 0)
 		}
 	}, 0)
