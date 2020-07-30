@@ -152,11 +152,14 @@
 "upsilon_sco":{"RA":262.691,"DEC":-37.296,"Vmag":2.7,"PMra":-4.19,"PMdec":-29.14,"Parallax":6.29},
 "vega":{"RA":279.234,"DEC":38.783,"Vmag":0.03,"PMra":201.02,"PMdec":287.46,"Parallax":128.93},
 "vindemiatrix":{"RA":195.545,"DEC":10.959,"Vmag":2.85,"PMra":-275.05,"PMdec":19.96,"Parallax":31.9},
+"yildun":{"RA":263.054152958333,"DEC":86.5864606666667,"Vmag":4.36,"PMra":10.17,"PMdec":53.97,"Parallax":18.95},
 "zeta_ en":{"RA":208.885,"DEC":-47.288,"Vmag":2.55,"PMra":-57.14,"PMdec":-44.75,"Parallax":8.48},
 "zeta_ara":{"RA":254.655,"DEC":-55.99,"Vmag":3.12,"PMra":-18.31,"PMdec":-35.29,"Parallax":5.68},
 "zeta_her":{"RA":250.323,"DEC":31.602,"Vmag":2.81,"PMra":-462.58,"PMdec":345.05,"Parallax":92.63},
 "zeta_oph":{"RA":249.29,"DEC":-10.567,"Vmag":2.54,"PMra":13.07,"PMdec":25.44,"Parallax":7.12},
 "zeta_per":{"RA":58.533,"DEC":31.884,"Vmag":2.84,"PMra":4.41,"PMdec":-9.15,"Parallax":3.32},
 "zeta_pup":{"RA":120.896,"DEC":-40.003,"Vmag":2.21,"PMra":-30.82,"PMdec":16.77,"Parallax":2.33},
-"zeta_sgr":{"RA":285.653,"DEC":-29.88,"Vmag":2.6,"PMra":-14.1,"PMdec":3.66,"Parallax":36.61}
+"zeta_sgr":{"RA":285.653,"DEC":-29.88,"Vmag":2.6,"PMra":-14.1,"PMdec":3.66,"Parallax":36.61},
+"ngc188":{"RA":12.1083333333333,"DEC":85.255,"Vmag":8.1,"PMra":-2.3087,"PMdec":-0.9565,"Parallax":0.5053},
+"hd5848":{"RA":17.1869886475,"DEC":86.2570904138889,"Vmag":4.24,"PMra":80.34,"PMdec":-11.36,"Parallax":10.43}
 }

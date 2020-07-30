@@ -105,13 +105,14 @@ func (star starInfo) getRaDec() (crtRA, crtDec float64) {
 	motionDecSec := yearsSinceEPOCH * star.PMdec / 1000
 
 	distStarNCP := 3600*(90-star.DEC) - motionDecSec
-	difRaDeg := math.Atan2(motionRaSec, distStarNCP) * 180 / math.Pi
-	//fmt.Println("motionRA_sec", motionRaSec, "motionDec_sec", motionDecSec, "to NCP:", distStarNCP, "difRA:", difRaDeg)
-	//fmt.Println(star.RA, degreeToStr(star.RA, true), star.DEC, degreeToStr(star.DEC, false))
-	//fmt.Println(star.RA+difRaDeg, degreeToStr(star.RA+difRaDeg, true), star.DEC+motionDecSec/3600, degreeToStr(star.DEC+motionDecSec/3600, false))
-
+	difRaRad := math.Atan2(motionRaSec, distStarNCP)
+	difRaDeg := difRaRad * 180 / math.Pi
 	crtRA = star.RA + difRaDeg
+
 	crtDec = star.DEC + motionDecSec/3600
+	// ? substract RA's contribution towards DEC
+	dDecRa := math.Sqrt(star.DEC*star.DEC + difRaDeg*difRaDeg) - star.DEC
+	crtDec = crtDec - dDecRa
 	return
 }
 func (star starInfo) getDEC() float64 {
@@ -144,15 +145,16 @@ func main() {
 
 	starCatalog := loadStarCatalog()
 
-	star := starCatalog["polaris"]
-
-	starRA, _ := star.getRaDec()
-	starHA := theta - starRA
-	fmt.Println("starRA:", degreeToStr(starRA, true), "star HourAngle: ", degreeToStr(starHA, true))
-
-	alt, az := getAltAz(starHA, star.DEC, lat)
-	fmt.Println("alt:", degreeToStr(alt, false), "az:", degreeToStr(az, false))
-	r := getAtmosphericRefraction(alt)
-	fmt.Println("AtmosphericRefraction(°):", r)
-	fmt.Println("adjusted alt:", degreeToStr(alt-r, false))
+	for _, name := range []string{"polaris", "yildun", "hd5848", "ngc188"} {
+		star := starCatalog[name]
+		starRA, starDEC := star.getRaDec()
+		starHA := theta - starRA
+		alt, az := getAltAz(starHA, star.DEC, lat)
+		r := getAtmosphericRefraction(alt)
+		fmt.Println("\nSTAR: ", name, "ra0:", star.RA, "raNow:", starRA)
+		fmt.Printf("PmRA[%v] PmDec[%v] J2000_RA[%v] J2000_DEC[%v] RA[%v] DEC[%v]\n", star.PMra, star.PMdec, degreeToStr(star.RA, true), degreeToStr(star.DEC, false), degreeToStr(starRA, true), degreeToStr(starDEC, false))
+		fmt.Println("HA: ", degreeToStr(starHA, true))
+		fmt.Println("AtmosphericRefraction(°):", r)
+		fmt.Println("alt:", degreeToStr(alt, false), "adjAlt:", degreeToStr(alt+r, false), "az:", degreeToStr(az, false))
+	}
 }
