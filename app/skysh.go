@@ -104,19 +104,18 @@ func (star starInfo) getRaDec() (crtRA, crtDec float64) {
 	motionRaSec := yearsSinceEPOCH * star.PMra / 1000
 	motionDecSec := yearsSinceEPOCH * star.PMdec / 1000
 
-	distStarNCP := 3600*(90-star.DEC) - motionDecSec
+	poleSign := float64(1)
+	if star.DEC < 0 { poleSign = -poleSign }
+	distStarNCP := 3600*(90-poleSign*star.DEC) - poleSign*motionDecSec
 	difRaRad := math.Atan2(motionRaSec, distStarNCP)
 	difRaDeg := difRaRad * 180 / math.Pi
 	crtRA = star.RA + difRaDeg
 
 	crtDec = star.DEC + motionDecSec/3600
 	// ? substract RA's contribution towards DEC
-	dDecRa := math.Sqrt(star.DEC*star.DEC + difRaDeg*difRaDeg) - star.DEC
-	crtDec = crtDec - dDecRa
+	dDecRa := math.Sqrt(star.DEC*star.DEC + difRaDeg*difRaDeg) - poleSign*star.DEC
+	crtDec = crtDec - poleSign*dDecRa
 	return
-}
-func (star starInfo) getDEC() float64 {
-	return star.DEC + yearsSinceEPOCH*star.PMdec/1000/3600
 }
 
 type starCatalog map[string]*starInfo
@@ -140,21 +139,29 @@ func loadStarCatalog() starCatalog {
 
 func main() {
 	now := time.Now()
+	now = time.Date(2020, time.July, 31, 1, 0, 0, 0, time.Local)
 	theta := getLocalSideralTime(now, long)
+	fmt.Println("NOW:", now.In(time.UTC))
+	fmt.Println("Years since J2000", yearsSinceEPOCH)
 	fmt.Println("local sideral time:", degreeToStr(theta, true))
 
 	starCatalog := loadStarCatalog()
 
-	for _, name := range []string{"polaris", "yildun", "hd5848", "ngc188"} {
+	fmt.Printf("%v|%v|%v|%v|%v|%v|%v|%v|%v|%v\n", "name", "RA J2000", "DEC J2000", "PM RA", "PM Dec", "Parallax", "VMag", "crt RA", "crt DEC", "atm refr.")
+	//for _, name := range []string{"polaris", "yildun", "hd5848", "ngc188", "hd5914", "hd5621", "hip85822", "hip37391", "hip115746"} {
+	for _, name := range []string{"polaris", "yildun", "hd5848", "ngc188", "hd5914", "hd5621", "hip37391", "hip115746", "miaplacidus"} {
 		star := starCatalog[name]
 		starRA, starDEC := star.getRaDec()
 		starHA := theta - starRA
-		alt, az := getAltAz(starHA, star.DEC, lat)
+		alt, _ := getAltAz(starHA, star.DEC, lat)
 		r := getAtmosphericRefraction(alt)
+		fmt.Printf("%v|%v|%v|%v|%v|%v|%v|%v|%v|%v\n", name, star.RA, star.DEC, star.PMra, star.PMdec, star.Parallax, star.Vmag, starRA, starDEC, r)
+		/*
 		fmt.Println("\nSTAR: ", name, "ra0:", star.RA, "raNow:", starRA)
 		fmt.Printf("PmRA[%v] PmDec[%v] J2000_RA[%v] J2000_DEC[%v] RA[%v] DEC[%v]\n", star.PMra, star.PMdec, degreeToStr(star.RA, true), degreeToStr(star.DEC, false), degreeToStr(starRA, true), degreeToStr(starDEC, false))
 		fmt.Println("HA: ", degreeToStr(starHA, true))
 		fmt.Println("AtmosphericRefraction(°):", r)
 		fmt.Println("alt:", degreeToStr(alt, false), "adjAlt:", degreeToStr(alt+r, false), "az:", degreeToStr(az, false))
+		//*/
 	}
 }
