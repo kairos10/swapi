@@ -105,7 +105,9 @@ func (star starInfo) getRaDec() (crtRA, crtDec float64) {
 	motionDecSec := yearsSinceEPOCH * star.PMdec / 1000
 
 	poleSign := float64(1)
-	if star.DEC+motionDecSec < 0 { poleSign = -poleSign }
+	if star.DEC+motionDecSec < 0 {
+		poleSign = -poleSign
+	}
 
 	/*
 	// --v1: almost a triangle, with the sum of angles = 180° + motionRaSec/3600
@@ -115,17 +117,26 @@ func (star starInfo) getRaDec() (crtRA, crtDec float64) {
 	// --v1 */
 	// --v2: better for stars near the Eq
 	factor01 := (90 - poleSign*(star.DEC+motionDecSec/3600)) / 90 // cone
-	factor01 = math.Sin(factor01 * math.Pi/2) // sphere
-	ampFactor := 1/factor01
-	difRaDeg := motionRaSec*ampFactor / 3600
+	factor01 = math.Sin(factor01 * math.Pi / 2)                   // sphere
+	ampFactor := 1 / factor01
+	difRaDeg := motionRaSec * ampFactor / 3600
 	// --v2 */
 
 	crtRA = star.RA + difRaDeg
 
 	crtDec = star.DEC + motionDecSec/3600
-	// ? substract RA's contribution towards DEC
-	dDecRa := math.Sqrt(star.DEC*star.DEC + difRaDeg*difRaDeg) - poleSign*star.DEC
+	dDecRa := math.Sqrt(star.DEC*star.DEC+difRaDeg*difRaDeg) - poleSign*star.DEC // substract PM_RA's contribution towards DEC
 	crtDec = crtDec - poleSign*dDecRa
+
+	// adjust ra/dec due to precession
+	// translated code from https://bbastrodesigns.com/lib/coordLib.js
+	m := 46.124 + 0.000279*yearsSinceEPOCH/100
+	n := 20.043 - 0.0085*yearsSinceEPOCH/100
+	deltaRA := yearsSinceEPOCH * (m + n*math.Sin(crtRA/180*math.Pi)*math.Tan(crtDec/180*math.Pi))
+	deltaDec := yearsSinceEPOCH * n * math.Cos(crtRA/180*math.Pi)
+	crtRA += deltaRA / 3600
+	crtDec += deltaDec / 3600
+
 	return
 }
 
